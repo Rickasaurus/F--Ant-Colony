@@ -3,7 +3,7 @@
 // Visit my Blog at http://RichardMinerich.com
 // This code is free to be used for anything you like as long as I am properly acknowledged.
 //
-// The basic Silverlight used here is based on Phillip Trelford's Missle Command Example
+// The basic Silverlight used here is based on Phillip Trelford's Missile Command Example
 // http://www.trelford.com/blog/post/MissileCommand.aspx
 //
 
@@ -132,7 +132,6 @@ type GameControl () as this =
                 let winner = updateScoreAndCheckForWinner !world
                 winner |> Option.iter (fun (color, ai) -> 
                                             updateMessage (sprintf "%s (%s) Won! Click to Load Custom AI." color ai.Name)                                        
-                                            timer.Stop()
                                             forget()
                                             startGame blackAi redAi)
             with e -> 
