@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AntsEverywhereApp", "AntsEverywhereApp\AntsEverywhereApp.fsproj", "{86516C98-4DAD-43D4-9FE1-78B041AE92FD}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AntsEverywhereLib", "AntsEverywhereLib\AntsEverywhereLib.fsproj", "{1FEB7E85-8F91-494C-9ED5-87C8BC32CB93}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TestAI1", "TestAI1\TestAI1.fsproj", "{76A65972-4054-4462-B055-3706075E0C24}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{86516C98-4DAD-43D4-9FE1-78B041AE92FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86516C98-4DAD-43D4-9FE1-78B041AE92FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86516C98-4DAD-43D4-9FE1-78B041AE92FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86516C98-4DAD-43D4-9FE1-78B041AE92FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FEB7E85-8F91-494C-9ED5-87C8BC32CB93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FEB7E85-8F91-494C-9ED5-87C8BC32CB93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FEB7E85-8F91-494C-9ED5-87C8BC32CB93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FEB7E85-8F91-494C-9ED5-87C8BC32CB93}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76A65972-4054-4462-B055-3706075E0C24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76A65972-4054-4462-B055-3706075E0C24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76A65972-4054-4462-B055-3706075E0C24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76A65972-4054-4462-B055-3706075E0C24}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
