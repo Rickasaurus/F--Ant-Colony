@@ -40,14 +40,10 @@ let emptyPheromoneSet = Map.ofSeq
                                     yield color, 0 }
 
 let defaultCell id = {Id = id; Food = 0; Ant = None; CellType = FieldCell; Pheromones = emptyPheromoneSet }
-
 let defaultBlackAnt = Some { Color = AntColor.Black; FoodCarried = 0 }
 let defaultRedAnt = Some { Color = AntColor.Red; FoodCarried = 0 }
 
-let getAnt () = defaultBlackAnt 
-
 let buildWorldInitialWorld () =
-
     let rnd = new System.Random() in 
         Map.ofSeq <|
         seq { for x in 0 .. xSize do
@@ -96,21 +92,21 @@ let getWorldChangeTransactions actions =
             match action with
             | Nothing -> ()
             | Move (target) -> if Option.isSome target.Ant then ()
-                                else yield buildTransaction 
+                               else yield buildTransaction 
                                             [ source; target ]
                                             [ source.Id, (fun oldcell -> { oldcell with Ant = None });
                                                 target.Id, (fun oldtarget -> { oldtarget with Ant = source.Ant }) ]
             | TakeFood (target) -> if target.Food <= 0 then ()
-                                    else 
-                                        let foodToGet = min (target.Food) (maxFoodAntCanCarry - ant.FoodCarried)
-                                        yield buildTransaction
+                                   else 
+                                       let foodToGet = min (target.Food) (maxFoodAntCanCarry - ant.FoodCarried)
+                                       yield buildTransaction
                                                 [ source; target ]
                                                 [ target.Id, (fun oldtarget -> { oldtarget with Food = oldtarget.Food - foodToGet });
                                                     source.Id, (fun oldcell -> { oldcell with Ant = Some { ant with FoodCarried = ant.FoodCarried + foodToGet } } ) ]
             | DropFood (target) -> if target.Food >= maxTotalFoodPerSquare then ()
-                                    else 
-                                        let foodToDrop = min (maxTotalFoodPerSquare - target.Food) (ant.FoodCarried)
-                                        yield buildTransaction
+                                   else 
+                                       let foodToDrop = min (maxTotalFoodPerSquare - target.Food) (ant.FoodCarried)
+                                       yield buildTransaction
                                                 [ source; target ]
                                                 [ target.Id, (fun oldtarget -> { oldtarget with Food = oldtarget.Food + foodToDrop });
                                                     source.Id, (fun oldcell -> { source with Ant = Some { ant with FoodCarried = ant.FoodCarried - foodToDrop } }) ] 
@@ -121,8 +117,7 @@ let getWorldChangeTransactions actions =
 
 let degradePheromones (world: TheWorld) = 
     world 
-    |> Map.map (fun uid cell -> { cell with Pheromones = cell.Pheromones 
-                                                            |> Map.map (fun key quantity -> max (quantity - 1) 0) } )
+    |> Map.map (fun uid cell -> { cell with Pheromones = cell.Pheromones |> Map.map (fun key quantity -> max (quantity - 1) 0) } )
 
 let applyWorldTransactions (oldWorld: TheWorld) changes = 
     Seq.fold (fun (world: TheWorld) (pred, action) ->
@@ -141,30 +136,3 @@ let worldCycle bPlayer rPlayer world : TheWorld =
     |> getWorldChangeTransactions
     |> applyWorldTransactions world
     |> degradePheromones
-
-//start the great circle of life
-//    let startWorldCycle bPlayer rPlayer drawScore uiUpdate =
-//        let initialWorld = buildWorldInitialWorld()
-//
-//        let foodToWin = int <| double (Map.fold (fun s k v -> s + v.Food) 0 initialWorld) * percentFoodToWin
-//
-//        let cycles = ref 0
-//        let winningCondition (world: TheWorld) = 
-//            cycles := !cycles + 1
-//            let bFood = BlackAntNest.CountFood world
-//            let rFood = RedAntNest.CountFood world
-//            if bFood > foodToWin || rFood > foodToWin || !cycles > maxWorldCycles then
-//                if bFood > rFood then Some(bPlayer)
-//                elif rFood > bFood then Some(rPlayer)
-//                else None
-//            else None
-//
-//        let rec worldLoop (world: TheWorld) = 
-//            System.Threading.Thread.Sleep(10)
-//            let winner = winningCondition world        
-//            drawScore (BlackAntNest.CountFood world) (RedAntNest.CountFood world)   
-//            let cont = uiUpdate world
-//            if Option.isNone winner && cont then
-//                worldLoop (worldCycle bPlayer rPlayer world)
-//            else winner
-//        worldLoop initialWorld
