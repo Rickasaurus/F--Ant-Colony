@@ -14,11 +14,11 @@ open System
 let xSize = 50
 let ySize = 50
 let nestSize = 5
-let maxTotalFoodPerSquare = 100
-let minGeneratedFoodPerSquare = 30
-let maxGeneratedFoodPerSquare = 50
+let maxTotalFoodPerSquare = 200
+let minGeneratedFoodPerSquare = 20
+let maxGeneratedFoodPerSquare = 100
 let maxFoodAntCanCarry = 5
-let chanceOfFood = 0.03
+let chanceOfFood = 0.04
 
 let maxCellPheromoneQuantity = 255
 let maxAntDropPheromoneQunatity = 50

@@ -104,7 +104,7 @@ type GameControl () as this =
                                      if cell.Food > 0 then drawFood ox oy                                     
                                      if cell.Ant.IsSome then drawAnt ox oy cell.Ant.Value.Color)
 
-    let startGame (blackAi : IAntBehavior) (redAi : IAntBehavior)  = 
+    let rec startGame (blackAi : IAntBehavior) (redAi : IAntBehavior)  = 
         let world = ref (buildWorldInitialWorld())
         drawUpdates !world
 
@@ -117,8 +117,8 @@ type GameControl () as this =
             let rFood = RedAntNest.CountFood world
             drawScore blackAi.Name bFood redAi.Name rFood
             if bFood > foodToWin || rFood > foodToWin || !cycles > maxWorldCycles then
-                if bFood > rFood then Some(blackAi)
-                elif rFood > bFood then Some(redAi)
+                if bFood > rFood then Some("Black", blackAi)
+                elif rFood > bFood then Some("Red", redAi)
                 else None
             else None
         
@@ -126,15 +126,22 @@ type GameControl () as this =
         timer.Interval <- TimeSpan.FromMilliseconds(10.0)
         timer.Tick
         |> Observable.subscribe (fun _ ->
-            world := worldCycle blackAi redAi !world
-            drawUpdates !world
-            let winner = updateScoreAndCheckForWinner !world
-            winner |> Option.iter (fun win -> 
-                                        updateMessage (sprintf "%s Wins! " win.Name)
-                                        timer.Stop())
+            try
+                world := worldCycle blackAi redAi !world
+                drawUpdates !world
+                let winner = updateScoreAndCheckForWinner !world
+                winner |> Option.iter (fun (color, ai) -> 
+                                            updateMessage (sprintf "%s (%s) Won! Click to Load Custom AI." color ai.Name)                                        
+                                            timer.Stop()
+                                            forget()
+                                            startGame blackAi redAi)
+            with e -> 
+                updateMessage e.Message
+                timer.Stop()
         )
         |> remember
         timer.Start()
+
         {new IDisposable with member this.Dispose() = timer.Stop()}
         |> remember
 
@@ -169,7 +176,7 @@ type GameControl () as this =
 
     do 
         startDefaultGame()
-        updateMessage "Click to Load AI"
+        updateMessage "Click to Load Custom AI."
         this.MouseLeftButtonUp
         |> Observable.subscribe (fun _ -> 
             match loadAi () with
