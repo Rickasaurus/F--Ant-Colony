@@ -5,7 +5,9 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AntsEverywhereApp", "AntsEv
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AntsEverywhereLib", "AntsEverywhereLib\AntsEverywhereLib.fsproj", "{1FEB7E85-8F91-494C-9ED5-87C8BC32CB93}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TestAI1", "TestAI1\TestAI1.fsproj", "{76A65972-4054-4462-B055-3706075E0C24}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Rick's Hardish", "TestAI1\Rick's Hardish.fsproj", "{76A65972-4054-4462-B055-3706075E0C24}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Frank Levine", "Frank Levine\Frank Levine.fsproj", "{16A406F7-AB97-4F8D-B7DE-B660CE1B7E11}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +27,10 @@ Global
 		{76A65972-4054-4462-B055-3706075E0C24}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{76A65972-4054-4462-B055-3706075E0C24}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{76A65972-4054-4462-B055-3706075E0C24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16A406F7-AB97-4F8D-B7DE-B660CE1B7E11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16A406F7-AB97-4F8D-B7DE-B660CE1B7E11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16A406F7-AB97-4F8D-B7DE-B660CE1B7E11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16A406F7-AB97-4F8D-B7DE-B660CE1B7E11}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

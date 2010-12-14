@@ -22,7 +22,7 @@ open System.Windows.Threading
 open AntsEverywhereLib.Types
 open AntsEverywhereLib.World
 
-type GameControl () as this =
+type SimulationControl () as this =
     inherit UserControl ()
 
     let mutable disposables = []
@@ -104,7 +104,7 @@ type GameControl () as this =
                                      if cell.Food > 0 then drawFood ox oy                                     
                                      if cell.Ant.IsSome then drawAnt ox oy cell.Ant.Value.Color)
 
-    let rec startGame (blackAi : IAntBehavior) (redAi : IAntBehavior)  = 
+    let rec startGame (blackAI : IAntBehavior) (redAI : IAntBehavior)  = 
         let world = ref (buildWorldInitialWorld())
         drawUpdates !world
 
@@ -115,10 +115,10 @@ type GameControl () as this =
             cycles := !cycles + 1
             let bFood = BlackAntNest.CountFood world
             let rFood = RedAntNest.CountFood world
-            drawScore blackAi.Name bFood redAi.Name rFood
+            drawScore blackAI.Name bFood redAI.Name rFood
             if bFood > foodToWin || rFood > foodToWin || !cycles > maxWorldCycles then
-                if bFood > rFood then Some("Black", blackAi)
-                elif rFood > bFood then Some("Red", redAi)
+                if bFood > rFood then Some("Black", blackAI)
+                elif rFood > bFood then Some("Red", redAI)
                 else None
             else None
         
@@ -127,13 +127,13 @@ type GameControl () as this =
         timer.Tick
         |> Observable.subscribe (fun _ ->
             try
-                world := worldCycle blackAi redAi !world
+                world := worldCycle blackAI redAI !world
                 drawUpdates !world
                 let winner = updateScoreAndCheckForWinner !world
                 winner |> Option.iter (fun (color, ai) -> 
                                             updateMessage (sprintf "%s (%s) Won! Click to Load Custom AI." color ai.Name)                                        
                                             forget()
-                                            startGame blackAi redAi)
+                                            startGame blackAI redAI)
             with e -> 
                 updateMessage e.Message
                 timer.Stop()
@@ -144,47 +144,24 @@ type GameControl () as this =
         {new IDisposable with member this.Dispose() = timer.Stop()}
         |> remember
 
-    let startDefaultGame () =
-        let redAi = new AntsEverywhereApp.AI.TestAntBehavior() :> IAntBehavior
-        let blackAi = new AntsEverywhereApp.AI.TestAntBehavior() :> IAntBehavior
-        startGame redAi blackAi
+    let loadAIEvent = new Event<_>()
 
     do  layout.Children.Add canvas
         this.Content <- layout
 
-    let loadAi () = 
-        try
-            let ofd = OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = false)
-
-            let clicked = ofd.ShowDialog()
-            if clicked.HasValue && clicked.Value then 
-                use stream = ofd.File.OpenRead()
-                let asmPart = AssemblyPart()
-                let asm = asmPart.Load stream
-                let ai = asm.GetTypes()
-                            |> Seq.filter (fun t -> t.IsClass && not t.IsInterface && not t.IsAbstract && not t.IsGenericTypeDefinition)
-                            |> Seq.filter (fun t -> typeof<IAntBehavior>.IsAssignableFrom(t))
-                            |> Seq.map (fun t -> Activator.CreateInstance(t) :?> IAntBehavior)
-                            |> List.ofSeq
-                            |> List.nth <| 0
-                Some ai
-            else None        
-        with 
-        | e -> updateMessage e.Message
-               None
-
     do 
-        startDefaultGame()
-        updateMessage "Click to Load Custom AI."
+        updateMessage "Click to Change AI."
         this.MouseLeftButtonUp
-        |> Observable.subscribe (fun _ -> 
-            match loadAi () with
-            | Some loadedAi -> forget ()
-                               let redAi = new AntsEverywhereApp.AI.TestAntBehavior() :> IAntBehavior
-                               startGame loadedAi redAi 
-            | None -> ()
-            )
-        |> remember
+        |> Event.add (fun _ -> 
+            forget()
+            loadAIEvent.Trigger())
+    
+    [<CLIEvent>]
+    member this.LoadAIEvent = loadAIEvent.Publish
 
+    member this.StartSimulation blackAI redAI =
+        forget()
+        startGame blackAI redAI 
+         
     interface System.IDisposable with
         member this.Dispose() = forget()

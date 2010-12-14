@@ -7,21 +7,20 @@
 // http://www.trelford.com/blog/post/MissileCommand.aspx
 //
 
-module SimplePhero
+module HardishAI
 
 open AntsEverywhereLib.Types
+open AntsEverywhereLib.Helpers
 
-let randomGen = new System.Random()
-
-let getRandomVal min max =  
-    lock randomGen (fun () -> randomGen.Next(min, max)) 
+let rnd = System.Random(int System.DateTime.Now.Ticks)
 
 type TestAntBehavior() =
     interface IAntBehavior with
-        member x.Name = "SimplePhero"
+        member x.Name = "Rick's Hardish" 
         member x.Behave me here locations nest = 
 
             let isMyHome node = node.CellType = WorldCellType.NestCell(me.Color)
+            let locationsWithoutAnts = locations |> List.filter  (fun node -> node.Ant = None)
 
             let (|HasFood|HasMaxFood|HasNoFood|) (ant: Ant) = 
                 if ant.FoodCarried = 0 then HasNoFood
@@ -48,49 +47,47 @@ type TestAntBehavior() =
                 if List.isEmpty foodLocations then None
                 else Some foodLocations
 
-            let (|SmellsPheromones|_|) (locations: WorldCell list) =
-                let pheromoneLocations = locations |> List.filter (fun node -> node.HasPheromone me.Color)
+            let (|HasPheromonesAndNoAnt|_|) (locations: WorldCell list) =
+                let pheromoneLocations = locations |> List.filter (fun node -> node.Ant = None) |> List.filter (fun node -> node.HasPheromone me.Color)
                 if List.isEmpty pheromoneLocations then None
                 else Some pheromoneLocations
 
-            let findHomeDirectionCell (locations: WorldCell list) = locations |> List.minBy (fun node -> nest.Distance node)
-            let homeDirectionCell = findHomeDirectionCell locations
-
-            let randomEmptyLocation locations = 
+            let (|HasNoAnt|_|) (locations: WorldCell list) =
                 let emptyLocations = locations |> List.filter (fun node -> node.Ant = None)
                 if List.length emptyLocations > 0 then
-                    Some (List.nth emptyLocations (getRandomVal 0 (List.length emptyLocations)))
-                else
-                    None
+                    Some (emptyLocations)
+                else None
             
+            let (|ShortestDistanceWithNoAnt|_|)  (locations: WorldCell list) =
+                let noAnts = locations |> List.filter (fun node -> node.Ant = None)
+                if List.length noAnts > 0 then Some (noAnts |> List.minBy (fun node -> nest.Distance node))
+                else None
+
             let maxFood = List.maxBy (fun node -> node.Food)
-            let maxPhero = List.maxBy (fun node -> node.Pheromones.[me.Color])
+            let minPhero = List.minBy (fun node -> node.Pheromones.[me.Color])
+            let noAnts = List.filter (fun node -> node.Ant = None)
 
             // [snippet:Simple Pheromone-Using Ant Colony AI]
-            match me with  
+            match me with
             | HasFood
             | HasMaxFood -> 
-                match locations with 
-                | HasUnownedFood cells 
-                    when not (here.HasPheromone me.Color) -> 
-                        DropPheromone (here, 100)
+                match locations with                    
                 | NearHome homeCells -> 
                     match homeCells with
                     | CanDrop dropCells -> DropFood dropCells.Head
-                    | CantDrop -> Move homeCells.Head
+                    | HasNoAnt noAntCells -> Move (List.random noAntCells)
+                    | _ -> Nothing
                 | AwayFromHome allCells -> 
-                    if not homeDirectionCell.ContainsAnt 
-                    then Move homeDirectionCell
-                    else match randomEmptyLocation locations with
-                            | Some location -> Move location
-                            | None -> Nothing                                                                                 
+                    match here.Pheromones.[me.Color] with
+                    | n when n < 20 -> DropPheromone (here, 100 - n)
+                    | _ -> match allCells with
+                           | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)
+                           | ShortestDistanceWithNoAnt node -> Move node
+                           | _ -> Nothing
             | HasNoFood -> 
-                match locations with                         
-                | HasUnownedFood foodCells -> 
-                    TakeFood (maxFood foodCells)
-                | SmellsPheromones pheroCells -> 
-                    Move (maxPhero pheroCells)
-                | _ -> match randomEmptyLocation locations with
-                        | Some location -> Move location
-                        | None -> Nothing
-            // [/snippet]
+                match locations with
+                | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)                        
+                | HasUnownedFood foodCells -> TakeFood (maxFood foodCells)
+                | HasPheromonesAndNoAnt pheroCells -> Move (minPhero pheroCells)
+                | HasNoAnt noAntCells -> Move (List.random noAntCells)
+                | _ -> Nothing
