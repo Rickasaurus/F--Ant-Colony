@@ -35,7 +35,11 @@ type SimulationControl () as this =
     let wm, hm = width / float (xSize + 1), height / float (ySize + 1)
     let offset x y = x * wm, y * hm  
     do  this.Width <- width; this.Height <- height
+#if SILVERLIGHT
     let canvas = Canvas(Background=SolidColorBrush(Colors.Orange), Cursor=Cursors.Stylus)
+#else
+    let canvas = Canvas(Background=SolidColorBrush(Colors.Orange))
+#endif
 
     let layout = Grid()
 
@@ -70,8 +74,16 @@ type SimulationControl () as this =
         let xoffset = radius / 6.0
         Ellipse(Width=radius, Height=radius, Fill=brush, RenderTransform = TranslateTransform(X = x + xoffset, Y = y + yoffset))
         |> canvas.Children.Add
+#if SILVERLIGHT
+#else
+        |> ignore
+#endif
         Ellipse(Width=radius, Height=radius, Fill=brush, RenderTransform = TranslateTransform(X = x + (radius / 1.5) + xoffset, Y = y + yoffset))
         |> canvas.Children.Add
+#if SILVERLIGHT
+#else
+        |> ignore
+#endif
 
     let drawFood x y = 
         let color = Colors.Green
@@ -79,6 +91,10 @@ type SimulationControl () as this =
         let transform = TranslateTransform(X = x, Y = y)
         Ellipse(Width=1.0 * wm,Height=1.0 * hm, Fill=brush, RenderTransform=transform)
         |> canvas.Children.Add
+#if SILVERLIGHT
+#else
+        |> ignore
+#endif
 
     let makeGradiant quantity max = (float quantity / float max)
     let drawPheromone x y antColor amount =
@@ -90,6 +106,7 @@ type SimulationControl () as this =
         let transform = TranslateTransform(X = x, Y = y)        
         Rectangle(Width=1.0 * wm,Height=1.0 * hm, Fill=brush, RenderTransform=transform)
         |> canvas.Children.Add
+        |> ignore
 
     let drawScore bName bFood rName rFood = 
         do updateScore (sprintf "Black (%s): %d vs Red (%s): %d" bName bFood rName rFood)
@@ -135,7 +152,7 @@ type SimulationControl () as this =
                                             forget()
                                             startGame blackAI redAI)
             with e -> 
-                updateMessage e.Message
+                updateMessage (sprintf "%O" e.Message)
                 timer.Stop()
         )
         |> remember
