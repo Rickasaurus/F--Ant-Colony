@@ -70,6 +70,10 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     
     let headerText = TextBlock(Text = "Select Your AI", HorizontalAlignment = HorizontalAlignment.Center)
     do globalStackPanel.Children.Add headerText
+#if SILVERLIGHT
+#else
+        |> ignore
+#endif
 
     let listStackPanel = StackPanel(Height = this.Height * 0.8, Margin = Thickness(5.0), Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
     let listWidth, listHeight = listStackPanel.Width * 0.4, listStackPanel.Height * 1.0
@@ -79,25 +83,50 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     do listStackPanel.Children.Add leftList
        listStackPanel.Children.Add rightList
        globalStackPanel.Children.Add listStackPanel
+#if SILVERLIGHT
+#else
+        |> ignore
+#endif
 
     let buttonStackPanel = StackPanel(Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
     let loadButton = Button(Content="Load AI")
     let startButton = Button(Content="Let's Go!")
 
     do  buttonStackPanel.Children.Add loadButton
+#if SILVERLIGHT
+#else
+                    |> ignore
+#endif
         buttonStackPanel.Children.Add startButton
+#if SILVERLIGHT
+#else
+                    |> ignore
+#endif
         globalStackPanel.Children.Add buttonStackPanel
+#if SILVERLIGHT
+#else
+                    |> ignore
+#endif
 
     //
     // Let's refresh those lists with our latest AI findings
     //
 
     let refresh () =
+        leftList.Items.Clear()
+        rightList.Items.Clear()
         !aiMap |> Map.iter (fun key value ->  
-                               leftList.Items.Clear()
-                               rightList.Items.Clear()
                                leftList.Items.Add( ListBoxItem(Content = key) )    
-                               rightList.Items.Add( ListBoxItem(Content = key) ))
+#if SILVERLIGHT
+#else
+                                |> ignore
+#endif
+                               rightList.Items.Add( ListBoxItem(Content = key) )
+#if SILVERLIGHT
+#else
+                                |> ignore
+#endif
+                                )
         |> ignore
 
     //
@@ -109,8 +138,15 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
 
     let loadAIFromStream (stream : System.IO.Stream) =
         try
+#if SILVERLIGHT
             let asmPart = AssemblyPart()
             let asm = asmPart.Load stream
+#else
+            // here's to hoping the the file isn't bigger that Int32.MAX
+            let buffer: byte[] = Array.zeroCreate (int stream.Length)
+            stream.Read(buffer, 0, (int stream.Length)) |> ignore
+            let asm = Assembly.Load buffer
+#endif
             let ai = asm.GetTypes()
                      |> Seq.filter (fun t -> t.IsClass && not t.IsInterface && not t.IsAbstract && not t.IsGenericTypeDefinition)
                      |> Seq.filter (fun t -> typeof<IAntBehavior>.IsAssignableFrom(t))
@@ -118,12 +154,12 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
                      |> List.ofSeq
                      |> List.nth <| 0
             Some ai
-        with e -> headerText.Text <- e.Message
+        with e -> headerText.Text <- sprintf "%O" e.Message
                   None
        
     let loadAIFromWeb url : Option<IAntBehavior>= 
         try
-            let client = WebClient()
+            let client = new WebClient()
             let asyncDownload : Async<Option<IAntBehavior>> =                      
                     async {
                         let asyncArgs = Async.AwaitEvent( client.OpenReadCompleted )
@@ -133,20 +169,28 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
                         return loadAIFromStream resultStream
                     }
             asyncDownload |> Async.RunSynchronously
-        with e -> headerText.Text <- e.Message
+        with e -> headerText.Text <- sprintf "%O" e.Message
                   None
 
     let loadAIFromDisk () = 
         try
-            let ofd = OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = false)
+#if SILVERLIGHT
+            let ofd = new OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = false)
+#else
+            let ofd = new Microsoft.Win32.OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = false)
+#endif
 
             let clicked = ofd.ShowDialog()
             if clicked.HasValue && clicked.Value then 
+#if SILVERLIGHT
                 use stream = ofd.File.OpenRead()
+#else
+                use stream = System.IO.File.OpenRead(ofd.FileName)
+#endif
                 loadAIFromStream stream
             else None        
         with 
-        | e -> headerText.Text <- e.Message
+        | e -> headerText.Text <- sprintf "%O" e.Message
                None
 
     //
@@ -168,6 +212,7 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         let listBoxItemToString (obj: obj) = 
             let lba = obj :?> ListBoxItem
             lba.Content :?> string
+        // TODO SelectedValue could be null
         let blackAI = resolveToAI <| listBoxItemToString leftList.SelectedValue
         let redAI = resolveToAI <| listBoxItemToString rightList.SelectedValue
         match blackAI, redAI with
@@ -176,8 +221,8 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         | Some blackAI, None -> headerText.Text <- "Red AI Couldn't Be Loaded!"
         | Some blackAI, Some redAI -> loadedAIEvent.Trigger(blackAI, redAI)
 
-    do loadButton.Click.Subscribe (fun _ -> try loadButtonClicked() with e -> headerText.Text <- e.Message) |> remember
-       startButton.Click.Subscribe (fun _ -> try startButtonClicked() with e -> headerText.Text <- e.Message) |> remember
+    do loadButton.Click.Subscribe (fun _ -> try loadButtonClicked() with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
+       startButton.Click.Subscribe (fun _ -> try startButtonClicked() with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
 
     //
     // Start things up

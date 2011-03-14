@@ -11,6 +11,7 @@ namespace AntsEverywhereApp
 
 open System.Windows
 
+#if SILVERLIGHT
 type App() as app =
     inherit Application()
 
@@ -19,4 +20,17 @@ type App() as app =
     do  app.Startup.Add(fun e ->
         gameController.SetInitParams(e.InitParams)
         app.RootVisual <- gameController)
+                    app.MainWindow.Content <- gameController)
     do  app.Exit.Add(fun _ -> (gameController :> System.IDisposable).Dispose())
+#else
+module StartUp =
+    open System
+
+    let app = new Application()
+    let gameController = new GameController()
+
+    do  app.Exit.Add(fun _ -> (gameController :> System.IDisposable).Dispose())
+    let win = new Window(Content = gameController)
+    [<STAThread>]
+    do app.Run win |> ignore
+#endif
