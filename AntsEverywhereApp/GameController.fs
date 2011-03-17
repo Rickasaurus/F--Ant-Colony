@@ -46,21 +46,13 @@ type GameController () as this =
 
     let switchControls newControl =
         layout.Children.Clear()
-        layout.Children.Add newControl
-#if SILVERLIGHT
-#else
-                    |> ignore
-#endif
+        layout.Children.SafeAdd newControl
 
     let startWithAI (blackAI : IAntBehavior) (redAI : IAntBehavior) =
         try 
             switchControls (simulationControl)
             simulationControl.StartSimulation blackAI redAI
-        with e -> layout.Children.Add( new TextBox(Text = sprintf "%O" e) )
-#if SILVERLIGHT
-#else
-                    |> ignore
-#endif
+        with e -> layout.Children.SafeAdd( new TextBox(Text = sprintf "%O" e) )
    
     do aiSelectionControl.LoadedAIEvent.Subscribe (fun (redAI, blackAI) -> startWithAI redAI blackAI) |> ignore
        simulationControl.LoadAIEvent.Subscribe (fun _ -> switchControls aiSelectionControl) |> ignore

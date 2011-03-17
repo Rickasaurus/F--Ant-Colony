@@ -51,7 +51,7 @@ type SimulationControl () as this =
         t.VerticalAlignment <- VerticalAlignment.Top
         t.Foreground <- SolidColorBrush Colors.White
         lastScore <- Some t
-        layout.Children.Add t
+        layout.Children.SafeAdd t
 
     let mutable lastMessage = None
     let updateMessage s =
@@ -61,7 +61,7 @@ type SimulationControl () as this =
         t.VerticalAlignment <- VerticalAlignment.Center
         t.Foreground <- SolidColorBrush Colors.White
         lastMessage <- Some t
-        layout.Children.Add t
+        layout.Children.SafeAdd t
 
     let drawAnt x y antColor = 
         let color = match antColor with
@@ -73,28 +73,16 @@ type SimulationControl () as this =
         let yoffset = radius / 2.0
         let xoffset = radius / 6.0
         Ellipse(Width=radius, Height=radius, Fill=brush, RenderTransform = TranslateTransform(X = x + xoffset, Y = y + yoffset))
-        |> canvas.Children.Add
-#if SILVERLIGHT
-#else
-        |> ignore
-#endif
+        |> canvas.Children.SafeAdd
         Ellipse(Width=radius, Height=radius, Fill=brush, RenderTransform = TranslateTransform(X = x + (radius / 1.5) + xoffset, Y = y + yoffset))
-        |> canvas.Children.Add
-#if SILVERLIGHT
-#else
-        |> ignore
-#endif
+        |> canvas.Children.SafeAdd
 
     let drawFood x y = 
         let color = Colors.Green
         let brush = SolidColorBrush(color) :> Brush
         let transform = TranslateTransform(X = x, Y = y)
         Ellipse(Width=1.0 * wm,Height=1.0 * hm, Fill=brush, RenderTransform=transform)
-        |> canvas.Children.Add
-#if SILVERLIGHT
-#else
-        |> ignore
-#endif
+        |> canvas.Children.SafeAdd
 
     let makeGradiant quantity max = (float quantity / float max)
     let drawPheromone x y antColor amount =
@@ -105,7 +93,7 @@ type SimulationControl () as this =
         let brush = SolidColorBrush(color, Opacity = opacity) :> Brush
         let transform = TranslateTransform(X = x, Y = y)        
         Rectangle(Width=1.0 * wm,Height=1.0 * hm, Fill=brush, RenderTransform=transform)
-        |> canvas.Children.Add
+        |> canvas.Children.SafeAdd
         |> ignore
 
     let drawScore bName bFood rName rFood = 
@@ -163,7 +151,7 @@ type SimulationControl () as this =
 
     let loadAIEvent = new Event<_>()
 
-    do  layout.Children.Add canvas
+    do  layout.Children.SafeAdd canvas
         this.Content <- layout
 
     do 

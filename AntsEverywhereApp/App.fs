@@ -20,7 +20,6 @@ type App() as app =
     do  app.Startup.Add(fun e ->
         gameController.SetInitParams(e.InitParams)
         app.RootVisual <- gameController)
-                    app.MainWindow.Content <- gameController)
     do  app.Exit.Add(fun _ -> (gameController :> System.IDisposable).Dispose())
 #else
 module StartUp =
