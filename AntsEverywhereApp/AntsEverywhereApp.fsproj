@@ -58,6 +58,7 @@
     </VisualStudio>
   </ProjectExtensions>
   <ItemGroup>
+    <Compile Include="Misc.fs" />
     <Compile Include="TestAntBehavior.fs" />
     <Compile Include="Simulation.fs" />
     <Compile Include="AISelection.fs" />

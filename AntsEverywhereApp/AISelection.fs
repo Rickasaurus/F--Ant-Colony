@@ -66,47 +66,30 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     // Yay, pretty graphics
     //
 
-    let globalStackPanel = StackPanel(Height = this.Height, Margin = Thickness(5.0), Orientation = Orientation.Vertical)
+    let globalStackPanel = new StackPanel(Height = this.Height, Margin = Thickness(5.0), Orientation = Orientation.Vertical)
     
-    let headerText = TextBlock(Text = "Select Your AI", HorizontalAlignment = HorizontalAlignment.Center)
-    do globalStackPanel.Children.Add headerText
-#if SILVERLIGHT
-#else
-        |> ignore
-#endif
+    let headerText = new TextBlock(Text = "Select Your AI", HorizontalAlignment = HorizontalAlignment.Center)
+    do globalStackPanel.Children.SafeAdd headerText
 
-    let listStackPanel = StackPanel(Height = this.Height * 0.8, Margin = Thickness(5.0), Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
+    let listStackPanel = new StackPanel(Height = this.Height * 0.8, Margin = Thickness(5.0), Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
     let listWidth, listHeight = listStackPanel.Width * 0.4, listStackPanel.Height * 1.0
-    let leftList = ListBox(SelectedItem = 0, SelectionMode = SelectionMode.Single)
-    let rightList = ListBox(SelectedItem = 0, SelectionMode = SelectionMode.Single)
+    let leftList = new ListBox(SelectedItem = 0, SelectionMode = SelectionMode.Single, Height = 300., Width = 150.)
+    let rightList = new ListBox(SelectedItem = 0, SelectionMode = SelectionMode.Single, Height = 300., Width = 150.)
 
-    do listStackPanel.Children.Add leftList
-       listStackPanel.Children.Add rightList
-       globalStackPanel.Children.Add listStackPanel
-#if SILVERLIGHT
-#else
-        |> ignore
-#endif
+//    let leftSelected = new TextBox(IsReadOnly = true)
+//    let rightSelected = new TextBox(IsReadOnly = true)
 
-    let buttonStackPanel = StackPanel(Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
+    do listStackPanel.Children.SafeAdd leftList
+       listStackPanel.Children.SafeAdd rightList
+       globalStackPanel.Children.SafeAdd listStackPanel
+
+    let buttonStackPanel = new StackPanel(Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
     let loadButton = Button(Content="Load AI")
     let startButton = Button(Content="Let's Go!")
 
-    do  buttonStackPanel.Children.Add loadButton
-#if SILVERLIGHT
-#else
-                    |> ignore
-#endif
-        buttonStackPanel.Children.Add startButton
-#if SILVERLIGHT
-#else
-                    |> ignore
-#endif
-        globalStackPanel.Children.Add buttonStackPanel
-#if SILVERLIGHT
-#else
-                    |> ignore
-#endif
+    do  buttonStackPanel.Children.SafeAdd loadButton
+        buttonStackPanel.Children.SafeAdd startButton
+        globalStackPanel.Children.SafeAdd buttonStackPanel
 
     //
     // Let's refresh those lists with our latest AI findings
@@ -116,18 +99,8 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         leftList.Items.Clear()
         rightList.Items.Clear()
         !aiMap |> Map.iter (fun key value ->  
-                               leftList.Items.Add( ListBoxItem(Content = key) )    
-#if SILVERLIGHT
-#else
-                                |> ignore
-#endif
-                               rightList.Items.Add( ListBoxItem(Content = key) )
-#if SILVERLIGHT
-#else
-                                |> ignore
-#endif
-                                )
-        |> ignore
+                               leftList.Items.SafeAdd( ListBoxItem(Content = key) )    
+                               rightList.Items.SafeAdd( ListBoxItem(Content = key) ))
 
     //
     // Reflection based AI Loading
@@ -212,7 +185,7 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         let listBoxItemToString (obj: obj) = 
             let lba = obj :?> ListBoxItem
             lba.Content :?> string
-        // TODO SelectedValue could be null
+        
         let blackAI = resolveToAI <| listBoxItemToString leftList.SelectedValue
         let redAI = resolveToAI <| listBoxItemToString rightList.SelectedValue
         match blackAI, redAI with
@@ -222,7 +195,13 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         | Some blackAI, Some redAI -> loadedAIEvent.Trigger(blackAI, redAI)
 
     do loadButton.Click.Subscribe (fun _ -> try loadButtonClicked() with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
-       startButton.Click.Subscribe (fun _ -> try startButtonClicked() with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
+       startButton.Click.Subscribe (fun _ -> 
+                                        try 
+                                            if leftList.SelectedValue = null || rightList.SelectedValue = null then
+                                                headerText.Text <- "Must select a black and red stategy"
+                                            else
+                                                startButtonClicked() 
+                                        with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
 
     //
     // Start things up
