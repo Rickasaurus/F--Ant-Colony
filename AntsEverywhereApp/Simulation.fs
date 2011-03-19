@@ -96,8 +96,8 @@ type SimulationControl () as this =
         |> canvas.Children.SafeAdd
         |> ignore
 
-    let drawScore bName bFood rName rFood = 
-        do updateScore (sprintf "Black (%s): %d vs Red (%s): %d" bName bFood rName rFood)
+    let drawScore bName bFood rName rFood remaing = 
+        do updateScore (sprintf "Black (%s): %d vs Red (%s): %d - Remaining Cycles %d" bName bFood rName rFood remaing)
 
     let drawUpdates (world: TheWorld) =
         canvas.Children.Clear()
@@ -109,7 +109,7 @@ type SimulationControl () as this =
                                      if cell.Food > 0 then drawFood ox oy                                     
                                      if cell.Ant.IsSome then drawAnt ox oy cell.Ant.Value.Color)
 
-    let rec startGame (blackAI : IAntBehavior) (redAI : IAntBehavior)  = 
+    let rec startGame (blackAI : IAntBehavior) (redAI : IAntBehavior) maxCycles  = 
         let world = ref (buildWorldInitialWorld())
         drawUpdates !world
 
@@ -120,8 +120,8 @@ type SimulationControl () as this =
             cycles := !cycles + 1
             let bFood = BlackAntNest.CountFood world
             let rFood = RedAntNest.CountFood world
-            drawScore blackAI.Name bFood redAI.Name rFood
-            if bFood > foodToWin || rFood > foodToWin || !cycles > maxWorldCycles then
+            drawScore blackAI.Name bFood redAI.Name rFood (maxCycles  - !cycles)
+            if bFood > foodToWin || rFood > foodToWin || !cycles > maxCycles then
                 if bFood > rFood then Some("Black", blackAI)
                 elif rFood > bFood then Some("Red", redAI)
                 else None
@@ -138,7 +138,7 @@ type SimulationControl () as this =
                 winner |> Option.iter (fun (color, ai) -> 
                                             updateMessage (sprintf "%s (%s) Won! Click to Load Custom AI." color ai.Name)                                        
                                             forget()
-                                            startGame blackAI redAI)
+                                            startGame blackAI redAI maxCycles)
             with e -> 
                 updateMessage (sprintf "%O" e.Message)
                 timer.Stop()
@@ -164,9 +164,9 @@ type SimulationControl () as this =
     [<CLIEvent>]
     member this.LoadAIEvent = loadAIEvent.Publish
 
-    member this.StartSimulation blackAI redAI =
+    member this.StartSimulation blackAI redAI maxCylces =
         forget()
-        startGame blackAI redAI 
+        startGame blackAI redAI maxCylces
          
     interface System.IDisposable with
         member this.Dispose() = forget()
