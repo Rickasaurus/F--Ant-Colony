@@ -60,7 +60,7 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     // Event for when we are done picking AI
     //
 
-    let loadedAIEvent = new Event<IAntBehavior * IAntBehavior>()
+    let loadedAIEvent = new Event<IAntBehavior * IAntBehavior * int>()
 
     //
     // Yay, pretty graphics
@@ -73,15 +73,21 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
 
     let listStackPanel = new StackPanel(Height = this.Height * 0.8, Margin = Thickness(5.0), Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
     let listWidth, listHeight = listStackPanel.Width * 0.4, listStackPanel.Height * 1.0
-    let leftList = new ListBox(SelectedItem = 0, SelectionMode = SelectionMode.Single, Height = 300., Width = 150.)
-    let rightList = new ListBox(SelectedItem = 0, SelectionMode = SelectionMode.Single, Height = 300., Width = 150.)
+    let leftList = new ListBox(SelectedItem = 0, SelectionMode = SelectionMode.Single, Height = 250., Width = 150.)
+    let rightList = new ListBox(SelectedItem = 0, SelectionMode = SelectionMode.Single, Height = 250., Width = 150.)
 
-//    let leftSelected = new TextBox(IsReadOnly = true)
-//    let rightSelected = new TextBox(IsReadOnly = true)
+    let timeLabel = new TextBlock(Text = "Game Cycles")
+    let timedGameStackPanel = new StackPanel(Height = this.Height * 0.8, Margin = Thickness(5.0), Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
+
+    let timeTextBox = new TextBox(Text = "1500")
+
+    do timedGameStackPanel.Children.SafeAdd(timeTextBox)
+       timedGameStackPanel.Children.SafeAdd(timeLabel)
 
     do listStackPanel.Children.SafeAdd leftList
        listStackPanel.Children.SafeAdd rightList
        globalStackPanel.Children.SafeAdd listStackPanel
+       globalStackPanel.Children.SafeAdd timedGameStackPanel
 
     let buttonStackPanel = new StackPanel(Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
     let loadButton = Button(Content="Load AI")
@@ -99,8 +105,8 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         leftList.Items.Clear()
         rightList.Items.Clear()
         !aiMap |> Map.iter (fun key value ->  
-                               leftList.Items.SafeAdd( ListBoxItem(Content = key) )    
-                               rightList.Items.SafeAdd( ListBoxItem(Content = key) ))
+                               leftList.Items.SafeAdd(new ListBoxItem(Content = key) )    
+                               rightList.Items.SafeAdd(new ListBoxItem(Content = key) ))
 
     //
     // Reflection based AI Loading
@@ -186,13 +192,15 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
             let lba = obj :?> ListBoxItem
             lba.Content :?> string
         
+        let timed =  Int32.Parse timeTextBox.Text
+
         let blackAI = resolveToAI <| listBoxItemToString leftList.SelectedValue
         let redAI = resolveToAI <| listBoxItemToString rightList.SelectedValue
         match blackAI, redAI with
         | None, None -> headerText.Text <- "Neither AI Could Be Loaded!"
         | None, Some redAI -> headerText.Text <- "Black AI Couldn't Be Loaded!"
         | Some blackAI, None -> headerText.Text <- "Red AI Couldn't Be Loaded!"
-        | Some blackAI, Some redAI -> loadedAIEvent.Trigger(blackAI, redAI)
+        | Some blackAI, Some redAI -> loadedAIEvent.Trigger(blackAI, redAI, timed)
 
     do loadButton.Click.Subscribe (fun _ -> try loadButtonClicked() with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
        startButton.Click.Subscribe (fun _ -> 

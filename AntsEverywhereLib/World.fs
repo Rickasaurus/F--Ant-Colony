@@ -48,7 +48,7 @@ let buildWorldInitialWorld () =
         Map.ofSeq <|
         seq { for x in 0 .. xSize do
                 for y in 0 .. ySize do
-                    let uid = new UID(x, y)
+                    let uid = uid (x, y)
                     let defaultcell = defaultCell uid
                     match x, y with
                     | InBlackNest -> yield uid, { defaultcell with Ant = defaultBlackAnt; CellType = NestCell(AntColor.Black) }
@@ -59,7 +59,7 @@ let buildWorldInitialWorld () =
             }
 
 let getAntViews (world: TheWorld) = 
-    let getWorldCell x y = Map.tryFind (new UID(x,y)) world
+    let getWorldCell x y = Map.tryFind (uid (x,y)) world
     Map.fold
         (fun state (uid: UID) cell ->
             let x, y = (uid.X, uid.Y)

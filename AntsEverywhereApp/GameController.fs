@@ -33,6 +33,7 @@ type GameController () as this =
     let dispose (d:IDisposable) = d.Dispose()
     let forget () = disposables |> List.iter dispose; disposables <- []
 
+    let outerLayout = new StackPanel()
     let layout = Grid()
     do this.Content <- layout
     
@@ -48,16 +49,17 @@ type GameController () as this =
         layout.Children.Clear()
         layout.Children.SafeAdd newControl
 
-    let startWithAI (blackAI : IAntBehavior) (redAI : IAntBehavior) =
+    let startWithAI (blackAI : IAntBehavior) (redAI : IAntBehavior) maxCycles: unit =
         try 
             switchControls (simulationControl)
-            simulationControl.StartSimulation blackAI redAI
+            simulationControl.StartSimulation blackAI redAI maxCycles
+            
         with e -> layout.Children.SafeAdd( new TextBox(Text = sprintf "%O" e) )
    
-    do aiSelectionControl.LoadedAIEvent.Subscribe (fun (redAI, blackAI) -> startWithAI redAI blackAI) |> ignore
+    do aiSelectionControl.LoadedAIEvent.Subscribe (fun (redAI, blackAI, timed) -> startWithAI redAI blackAI timed) |> ignore
        simulationControl.LoadAIEvent.Subscribe (fun _ -> switchControls aiSelectionControl) |> ignore
 
-    do startWithAI defaultAI defaultAI
+    do startWithAI defaultAI defaultAI maxWorldCycles
 
     member x.SetInitParams args = 
         aiSelectionControl.addItems args

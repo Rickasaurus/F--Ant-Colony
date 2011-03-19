@@ -25,15 +25,11 @@ let maxAntDropPheromoneQunatity = 50
 let pheromoneDispersalRate = 1
 
 let percentFoodToWin = 0.5
-let maxWorldCycles = 10000
+let maxWorldCycles = 1500
 
-type UID (x,y) =
-    member internal t.X = x
-    member internal t.Y = y
-    interface IComparable with 
-        member t.CompareTo o =
-            let other = o :?> UID 
-            compare (other.X, other.Y) (x, y)
+type UID = { X: int; Y: int }
+
+let uid (x, y) = { X = x; Y = y}
 
 //type PheromoneType =
 //    | Sweet = 0 
@@ -41,8 +37,8 @@ type UID (x,y) =
 //    | Gross = 2
 
 type AntColor =
-    | Black = 0 
-    | Red = 1
+    | Black 
+    | Red
 
 type WorldCellType =
         | FieldCell
