@@ -7,3 +7,5 @@
 //
 // The basic Silverlight used here is based on Phillip Trelford's Missile Command Example
 // http://www.trelford.com/blog/post/MissileCommand.aspx
+//
+// Update: Robert Pickering has added WPF support!
