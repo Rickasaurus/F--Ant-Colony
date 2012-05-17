@@ -20,6 +20,7 @@ open System.Windows.Shapes
 open System.Windows.Threading
 
 open AntsEverywhereLib.Types
+open AntsEverywhereLib.UserTypes
 open AntsEverywhereLib.World
 
 type SimulationControl () as this =

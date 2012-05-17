@@ -3,9 +3,7 @@
 // Visit my Blog at http://RichardMinerich.com
 // This code is free to be used for anything you like as long as I am properly acknowledged.
 //
-// The basic Silverlight used here is based on Phillip Trelford's Missile Command Example
-// http://www.trelford.com/blog/post/MissileCommand.aspx
-//
+
 
 module AntsEverywhereLib.Types
 
@@ -39,7 +37,12 @@ let uid (x, y) = { X = x; Y = y}
 type AntColor =
     | Black 
     | Red
-
+    with
+        member t.Other = 
+            match t with
+            | Black -> Red
+            | Red -> Black
+              
 type WorldCellType =
         | FieldCell
         | NestCell of AntColor
@@ -60,20 +63,10 @@ and WorldCell = {
     Pheromones : Map<AntColor, int> }
     with
         member t.IsFullOfFood = t.Food >= maxTotalFoodPerSquare
-        member t.HasFood = t.Food > 0
-        member t.ContainsAnt = t.Ant.IsSome
-        member t.HasPheromone color = not (t.Pheromones.[color] = 0)
-        member t.MaxPheromones = maxCellPheromoneQuantity
-        member t.MaxFood = maxTotalFoodPerSquare
 
-and TheWorld = Map<UID, WorldCell>
+and TheWorld = Map<UID, WorldCell>    
 
-and AntAction =
-    | Nothing
-    | Move of WorldCell
-    | TakeFood of WorldCell
-    | DropFood of WorldCell
-    | DropPheromone of WorldCell * int
+type WorldChange = TheWorld -> TheWorld
 
 type Nest(ix, iy, sizex, sizey) =
     member internal t.MinX = ix
@@ -87,11 +80,8 @@ type Nest(ix, iy, sizex, sizey) =
             let pow x = x * x 
             sqrt (pow(double cx - double x) + pow(double cy - double y))
     member t.CountFood (world: TheWorld) = 
-            Map.fold (fun s (k: UID) v -> if t.IsInBounds k.X k.Y then s + v.Food else s) 0 world
-        
-
-type IAntBehavior =
-    abstract member Name : string
-    abstract member Behave : Ant -> WorldCell -> WorldCell list -> Nest -> AntAction     
-
-type WorldChange = TheWorld -> TheWorld
+            Map.fold (fun s (k: UID) v -> if t.IsInBounds k.X k.Y then s + v.Food else s) 0 world   
+    member internal t.CellsWithMaxFood (world: TheWorld) = 
+            Map.filter (fun (k: UID) v -> t.IsInBounds k.X k.Y) world   
+            |> Map.toList
+            |> List.filter (fun (k,v) -> v.IsFullOfFood)

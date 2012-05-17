@@ -22,6 +22,7 @@ open System.Reflection
 open System.Net
 
 open AntsEverywhereLib.Types
+open AntsEverywhereLib.UserTypes
 
 [<AutoOpen>]
 module FsExtensions =

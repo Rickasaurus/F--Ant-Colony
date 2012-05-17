@@ -10,6 +10,7 @@
 module AntsEverywhereExmampleAI
 
 open AntsEverywhereLib.Types
+open AntsEverywhereLib.UserTypes
 
 let randomGen = new System.Random()
 
@@ -19,7 +20,7 @@ let getRandomVal min max =
 type TestAntBehavior() =
     interface IAntBehavior with
         member x.Name = "Frank_Levine"
-        member x.Behave me here locations nest =
+        member x.Behave me here locations =
            
             // This Ant's basic strategy is this:
             // If you have food and are near the nest
@@ -43,10 +44,10 @@ type TestAntBehavior() =
            
             //                                    
             // helper functions
-            let isNest (cell: WorldCell) = cell.CellType = WorldCellType.NestCell(me.Color)
+            let isNest (cell: AntCellView) = cell.IsMyNest
            
             // how do I negate a function?!?  this seems a bit heavy-handed
-            let isNotNest (cell: WorldCell) =
+            let isNotNest (cell: AntCellView) =
                 if isNest cell then
                     false
                 else
@@ -60,17 +61,17 @@ type TestAntBehavior() =
             // first = closest to nest
             // last = farthest from nest
             let emptyNeighbors = locations |> List.filter (fun c -> c.ContainsAnt = false)
-                                           |> List.sortBy (fun c -> nest.Distance(c))                                     
+                                           |> List.sortBy (fun c -> c.DistanceToNest)                                     
 
             // all empty neighbors with my pheromones
-            let emptyNeighborsWithP = emptyNeighbors |> List.filter( fun c -> c.HasPheromone(me.Color))                                                   
-                                                     |> List.sortBy( fun c -> nest.Distance(c))
+            let emptyNeighborsWithP = emptyNeighbors |> List.filter( fun c -> c.HasFriendlyPheromone)                                                   
+                                                     |> List.sortBy( fun c -> c.DistanceToNest)
                                                      |> List.toArray
 
             // all neighbors with food, ordered by the amount of food decending
             let neighborsWithFood = locations |> List.filter (isNotNest)
                                               |> List.filter (fun c -> c.HasFood)
-                                              |> List.sortBy (fun c -> c.Food)
+                                              |> List.sortBy (fun c -> c.FoodContained)
                                               |> List.rev
 
             // functions to make the code below more readable
@@ -90,19 +91,17 @@ type TestAntBehavior() =
             // has less than this number
             let REFRESH_THRESHOLD = 50;
 
-
-
             // active pattern to determine the ant's high-level state           
-            let (|ShouldDropFood|Forage|ReturnToNest|) (ant: Ant) =
+            let (|ShouldDropFood|Forage|ReturnToNest|) (ant: AntView) =
                 let haveAvailableNestCells = (nestCells.IsEmpty = false)
                 match ant with
-                    | a when a.HasFood && haveAvailableNestCells -> ShouldDropFood
-                    | a when a.IsFullOfFood -> ReturnToNest
+                    | a when a.CarryingFood && haveAvailableNestCells -> ShouldDropFood
+                    | a when a.CarryingMaxFood -> ReturnToNest
                     | _ -> Forage
 
             // active pattern to decide if we need to refresh pheromones
-            let (|NeedsRefresh|NoRefresh|) (cell: WorldCell) =
-                match cell.Pheromones.[me.Color] with
+            let (|NeedsRefresh|NoRefresh|) (cell: AntCellView) =
+                match cell.FriendlyPheromoneQuantity with
                     | x when x < REFRESH_THRESHOLD ->
                         let amt = MAX_PHERO - x     // amt is the number of pheromones required to bring this cell back to 100
                         NeedsRefresh amt
@@ -111,9 +110,9 @@ type TestAntBehavior() =
             // gets the relative distance to the nest
             // relativeDist > 0 --> cell is farther from the nest than 'here'
             // relativeDist < 0 --> cell is closer to the nest than 'here'                   
-            let relativeDist (cell: WorldCell) =
-                let dHere = nest.Distance(here)
-                let dCell = nest.Distance(cell)
+            let relativeDist (cell: AntCellView) =
+                let dHere = here.DistanceToNest
+                let dCell = cell.DistanceToNest
                 dCell - dHere
 
             // function to get the last thing from an array
@@ -122,7 +121,7 @@ type TestAntBehavior() =
 
             // the ant parameter isn't used, but I don't know how to make a
             // parameterless active pattern
-            let (|AdjacentToFood|AdjacentToPheromone|NoMansLand|) (ant: Ant) =
+            let (|AdjacentToFood|AdjacentToPheromone|NoMansLand|) (ant: AntView) =
                 if neighborsWithFood.Length > 0 then
                     AdjacentToFood
                 elif emptyNeighborsWithP.Length > 0 && relativeDist (last emptyNeighborsWithP) > 0. then   

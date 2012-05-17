@@ -20,6 +20,7 @@ open System.Windows.Shapes
 open System.Windows.Threading
 
 open AntsEverywhereLib.Types
+open AntsEverywhereLib.UserTypes
 
 type GameController () as this =
     inherit UserControl ()
@@ -37,7 +38,7 @@ type GameController () as this =
     let layout = Grid()
     do this.Content <- layout
     
-    let defaultAI = AI.TestAntBehavior() :> AntsEverywhereLib.Types.IAntBehavior
+    let defaultAI = AI.TestAntBehavior() :> AntsEverywhereLib.UserTypes.IAntBehavior
 
     let aiSelectionControl = new AISelectionControl(defaultAI)
     do aiSelectionControl |> remember
