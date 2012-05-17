@@ -19,7 +19,7 @@ type TestAntBehavior() =
         member x.Name = "Rick's Hardish" 
         member x.Behave me here locations = 
 
-            let locationsWithoutAnts = locations |> List.filter  (fun node -> node.Ant = None)
+            let locationsWithoutAnts = locations.EmptyCells
 
             let (|CarryingFood|CarryingMaxFood|CarryingNoFood|) (ant: AntView) =
                 if ant.CarryingMaxFood  then CarryingFood
@@ -69,8 +69,9 @@ type TestAntBehavior() =
 
             // [snippet:Simple Pheromone-Using Ant Colony AI]
             match me with
-            | HasMaxFood -> 
-                match locations with                    
+            | CarryingFood
+            | CarryingMaxFood -> 
+                match locations.Cells with                    
                 | NearHome homeCells -> 
                     match homeCells with
                     | CanDrop dropCells -> DropFood dropCells.Head
@@ -83,8 +84,8 @@ type TestAntBehavior() =
                            | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)
                            | ShortestDistanceWithNoAnt node -> Move node
                            | _ -> Nothing
-            | HasNoFood -> 
-                match locations with
+            | CarryingNoFood -> 
+                match locations.Cells with
                 | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)                        
                 | HasUnownedFood foodCells -> TakeFood (maxFood foodCells)
                 | HasPheromonesAndNoAnt pheroCells -> Move (minPhero pheroCells)

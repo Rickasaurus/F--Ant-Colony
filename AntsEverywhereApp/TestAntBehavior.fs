@@ -19,19 +19,19 @@ type TestAntBehavior() =
         member x.Name = "Hardish" 
         member x.Behave me here locations = 
 
-            let locationsWithoutAnts = locations |> List.filter  (fun node -> node.Ant = None)
+            let locationsWithoutAnts = locations.EmptyCells
 
             let (|HasFood|HasMaxFood|HasNoFood|) (ant: AntView) = 
                 if ant.FoodCarried = 0 then HasNoFood
                 elif ant.CarryingMaxFood then HasMaxFood
                 else HasFood
 
-            let (|NearHome|_|) (locations: AntCellView list) =
+            let (|NearHome|_|)  (locations: AntCellView list) =
                 let homeNodes = locations |> List.filter (fun node -> node.IsMyNest)
                 if List.isEmpty homeNodes then None
                 else Some homeNodes
              
-            let (|AwayFromHome|NearHome|) (locations: AntCellView list) =
+            let (|AwayFromHome|NearHome|)  (locations: AntCellView list) =
                 let homeLocations, awayLocations = locations |> List.partition (fun node -> node.IsMyNest)
                 if List.isEmpty homeLocations then AwayFromHome awayLocations
                 else NearHome homeLocations 
@@ -70,7 +70,7 @@ type TestAntBehavior() =
             match me with
             | HasFood
             | HasMaxFood -> 
-                match locations with                    
+                match locations.Cells with                    
                 | NearHome homeCells -> 
                     match homeCells with
                     | CanDrop dropCells -> DropFood dropCells.Head
@@ -84,7 +84,7 @@ type TestAntBehavior() =
                            | ShortestDistanceWithNoAnt node -> Move node
                            | _ -> Nothing
             | HasNoFood -> 
-                match locations with
+                match locations.Cells with
                 | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)                        
                 | HasUnownedFood foodCells -> TakeFood (maxFood foodCells)
                 | HasPheromonesAndNoAnt pheroCells -> Move (minPhero pheroCells)

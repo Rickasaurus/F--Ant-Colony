@@ -23,7 +23,7 @@ let (|InBlackNest|InRedNest|Neither|) (x,y) =
     elif RedAntNest.IsInBounds x y then InRedNest
     else Neither
 
-let getAntNest ant =
+let getAntNest (ant: Ant) =
     match ant.Color with
     | AntColor.Black -> BlackAntNest
     | AntColor.Red -> RedAntNest
@@ -73,12 +73,12 @@ let getAntViews (world: TheWorld) =
         [] world
 
 let getAntActions (bBehave: IAntBehavior) (rBehave: IAntBehavior) (views: (Ant * WorldCell * WorldCell list * Nest) list) =
-    let getAntBehavior ant =
+    let getAntBehavior (ant: Ant) =
         match ant.Color with
         | AntColor.Black -> bBehave
         | AntColor.Red -> rBehave
     views |> List.map (fun (ant, cell, antView, nest) -> let behavior = getAntBehavior ant in 
-                                                            cell, behavior.Behave (AntView ant) (AntCellView (cell, ant, nest)) (antView |> List.map (fun v -> AntCellView (v, ant, nest))))
+                                                            cell, behavior.Behave (AntView ant) (AntCellView (cell, ant, nest)) (AntNearbyView.FromWorldCells antView ant nest))
 
 let buildTransaction (expectedCells: WorldCell list) actions = 
     let predicate = (fun (world: TheWorld) -> List.forall (fun (cell: WorldCell) -> (Map.find cell.Id world) = cell) expectedCells)

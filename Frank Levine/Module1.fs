@@ -9,7 +9,6 @@
 
 module AntsEverywhereExmampleAI
 
-open AntsEverywhereLib.Types
 open AntsEverywhereLib.UserTypes
 
 let randomGen = new System.Random()
@@ -54,25 +53,19 @@ type TestAntBehavior() =
                     true
 
             // nest cells that can receive food
-            let nestCells = locations |> List.filter isNest
-                                      |> List.filter (fun c -> c.IsFullOfFood = false)
+            let nestCells = locations.FoodDropCells
 
             // all empty neighbors, sorted so we can get at the closest and farthest ones from the nest
             // first = closest to nest
             // last = farthest from nest
-            let emptyNeighbors = locations |> List.filter (fun c -> c.ContainsAnt = false)
-                                           |> List.sortBy (fun c -> c.DistanceToNest)                                     
+            let emptyNeighbors = locations.EmptyCells |> List.sortBy (fun c -> c.DistanceToNest)                                     
 
             // all empty neighbors with my pheromones
-            let emptyNeighborsWithP = emptyNeighbors |> List.filter( fun c -> c.HasFriendlyPheromone)                                                   
-                                                     |> List.sortBy( fun c -> c.DistanceToNest)
-                                                     |> List.toArray
+            let emptyNeighborsWithP = locations.FriendlyPheromoneCells |> List.sortBy( fun c -> c.DistanceToNest) |> List.toArray
 
             // all neighbors with food, ordered by the amount of food decending
-            let neighborsWithFood = locations |> List.filter (isNotNest)
-                                              |> List.filter (fun c -> c.HasFood)
-                                              |> List.sortBy (fun c -> c.FoodContained)
-                                              |> List.rev
+            let neighborsWithFood = locations.FoodCollectionCells
+                                    |> List.sortBy (fun c -> -c.FoodContained)
 
             // functions to make the code below more readable
             // NullMove does nothing (like when you're boxed in)

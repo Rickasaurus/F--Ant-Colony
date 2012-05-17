@@ -48,8 +48,9 @@ type WorldCellType =
         | NestCell of AntColor
 
 type Ant = {
-    Color : AntColor
-    FoodCarried : int }
+    Color: AntColor
+    FoodCarried: int
+    }
     with
         member x.IsFullOfFood = x.FoodCarried >= maxFoodAntCanCarry
         member x.HasFood = x.FoodCarried > 0
