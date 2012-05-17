@@ -79,13 +79,24 @@ let getAntActions (bBehave: IAntBehavior) (rBehave: IAntBehavior) (views: (Ant *
         | AntColor.Red -> rBehave
     views |> List.map (fun (ant, cell, antView, nest) -> let behavior = getAntBehavior ant in 
                                                             cell, behavior.Behave (AntView ant) (AntCellView (cell, ant, nest)) (AntNearbyView.FromWorldCells antView ant nest))
-
-let buildTransaction (expectedCells: WorldCell list) actions = 
-    let predicate = (fun (world: TheWorld) -> List.forall (fun (cell: WorldCell) -> (Map.find cell.Id world) = cell) expectedCells)
+let buildDependentTransaction (expectedCells: WorldCell list) actions = 
+    let predicate = (fun (world: TheWorld) -> expectedCells |> List.forall (fun (cell: WorldCell) -> (Map.find cell.Id world) = cell))
     let action = (fun (iworld: TheWorld) -> 
         List.fold (fun (cworld: TheWorld) (id, action) ->
             Map.add id (action cworld.[id]) cworld) iworld actions)
     predicate, action
+
+let dropPheromonesInTargetCell antColor quantity target = 
+    let newValue = max (target.Pheromones.[antColor] + quantity) maxCellPheromoneQuantity in 
+        { target with Pheromones = target.Pheromones.Add(antColor, newValue ) } 
+
+let woundAntInTargetCell oldtarget =
+    match oldtarget.Ant with
+    | None -> oldtarget
+    | Some (ant) ->
+        let newWounds = ant.Wounds + 1 
+        if newWounds >= maxAntWounds then { oldtarget with Ant = None } // Ant Dies
+        else { oldtarget with Ant = Some <| ant.UpdateWounds(newWounds) }
 
 let getWorldChangeTransactions actions =
     seq { for source, action in actions do
@@ -93,28 +104,38 @@ let getWorldChangeTransactions actions =
             match action with
             | Nothing -> ()
             | Move (target) -> if Option.isSome target.Ant then ()
-                               else yield buildTransaction 
+                               else yield buildDependentTransaction 
                                             [ source; target.WorldCell ]
-                                            [ source.Id, (fun oldcell -> { oldcell with Ant = None });
-                                                target.WorldCell.Id, (fun oldtarget -> { oldtarget with Ant = source.Ant }) ]
+                                            [ source.Id,           (fun oldcell -> { oldcell with Ant = None });
+                                              target.WorldCell.Id, (fun oldtarget -> { oldtarget with Ant = source.Ant }) ]
             | TakeFood (target) -> if target.WorldCell.Food <= 0 then ()
                                    else 
                                        let foodToGet = min (target.WorldCell.Food) (maxFoodAntCanCarry - ant.FoodCarried)
-                                       yield buildTransaction
+                                       yield buildDependentTransaction
                                                 [ source; target.WorldCell ]
                                                 [ target.WorldCell.Id, (fun oldtarget -> { oldtarget with Food = oldtarget.Food - foodToGet });
-                                                    source.Id, (fun oldcell -> { oldcell with Ant = Some <| ant.UpdateFood(ant.FoodCarried + foodToGet) } ) ]
+                                                  source.Id,           (fun oldcell -> { oldcell with Ant = Some <| ant.UpdateFood(ant.FoodCarried + foodToGet) } ) ]
             | DropFood (target) -> if target.WorldCell.Food >= maxTotalFoodPerSquare then ()
                                    else 
                                        let foodToDrop = min (maxTotalFoodPerSquare - target.WorldCell.Food) (ant.FoodCarried)
-                                       yield buildTransaction
+                                       yield buildDependentTransaction
                                                 [ source; target.WorldCell ]
                                                 [ target.WorldCell.Id, (fun oldtarget -> { oldtarget with Food = oldtarget.Food + foodToDrop });
-                                                    source.Id, (fun oldcell -> { source with Ant = Some <| ant.UpdateFood(ant.FoodCarried - foodToDrop) }) ] 
-            | DropPheromone (target, quantity) -> let newValue = max (target.WorldCell.Pheromones.[ant.Color] + quantity) maxCellPheromoneQuantity
-                                                  yield buildTransaction
-                                                            [ target.WorldCell ]
-                                                            [ target.WorldCell.Id, (fun oldtarget -> { oldtarget with Pheromones = oldtarget.Pheromones.Add(ant.Color, newValue ) } ) ] }
+                                                  source.Id,           (fun oldcell -> { source with Ant = Some <| ant.UpdateFood(ant.FoodCarried - foodToDrop) }) ] 
+            | DropPheromone (target, quantity) -> yield buildDependentTransaction [] [ target.WorldCell.Id, dropPheromonesInTargetCell ant.Color quantity ]
+            | Attack (target) -> yield buildDependentTransaction [] [ target.WorldCell.Id, woundAntInTargetCell ]
+    }
+
+
+let spawnAnts (world: TheWorld) =
+    world 
+    |> Map.map (fun uid cell -> 
+        if cell.Ant.IsNone && cell.Food >= spawnFood then
+            match uid.X, uid.Y with
+            | InBlackNest -> { cell with Ant = Some <| Ant(AntColor.Black); Food = cell.Food - spawnFood }
+            | InRedNest -> { cell with Ant = Some <| Ant(AntColor.Red); Food = cell.Food - spawnFood }
+            | Neither -> cell
+        else cell)
 
 let degradePheromones (world: TheWorld) = 
     world 
@@ -137,3 +158,4 @@ let worldCycle bPlayer rPlayer world : TheWorld =
     |> getWorldChangeTransactions
     |> applyWorldTransactions world
     |> degradePheromones
+    |> spawnAnts

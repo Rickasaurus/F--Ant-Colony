@@ -9,14 +9,17 @@ module AntsEverywhereLib.Types
 
 open System
 
-let xSize = 50
-let ySize = 50
-let nestSize = 5
+let xSize = 30
+let ySize = 30
+let nestSize = 3
 let maxTotalFoodPerSquare = 200
 let minGeneratedFoodPerSquare = 20
 let maxGeneratedFoodPerSquare = 100
 let maxFoodAntCanCarry = 5
 let chanceOfFood = 0.04
+
+let spawnFood = 50
+let maxAntWounds = 2
 
 let maxCellPheromoneQuantity = 255
 let maxAntDropPheromoneQunatity = 50
@@ -26,7 +29,6 @@ let percentFoodToWin = 0.5
 let maxWorldCycles = 1500
 
 type UID = { X: int; Y: int }
-
 let uid (x, y) = { X = x; Y = y}
 
 //type PheromoneType =
@@ -35,7 +37,7 @@ let uid (x, y) = { X = x; Y = y}
 //    | Gross = 2
 
 type AntColor =
-    | Black 
+    | Black
     | Red
     with
         member t.Other = 
@@ -51,8 +53,12 @@ type WorldCellType =
 type Ant =
     val Color: AntColor
     val FoodCarried: int
-    new (color, food) = { Color = color; FoodCarried = food }
+    val Wounds: int
+    new (color) = { Color = color; FoodCarried = 0; Wounds = 0}
+    new (color, food) = { Color = color; FoodCarried = food; Wounds = 0 }
+    new (color, food, wounds) = { Color = color; FoodCarried = food; Wounds = wounds }
     member internal x.UpdateFood newFood = new Ant(x.Color, newFood)
+    member internal x.UpdateWounds newWounds = new Ant(x.Color, x.FoodCarried, newWounds)
     member x.IsFullOfFood = x.FoodCarried >= maxFoodAntCanCarry
     member x.HasFood = x.FoodCarried > 0
     member x.MaxPheromonesToDrop = maxAntDropPheromoneQunatity
