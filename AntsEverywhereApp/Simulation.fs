@@ -119,12 +119,18 @@ type SimulationControl () as this =
 
         let updateScoreAndCheckForWinner (world: TheWorld) = 
             cycles := !cycles + 1
-            let bFood = BlackAntNest.CountFood world
-            let rFood = RedAntNest.CountFood world
-            drawScore blackAI.Name bFood redAI.Name rFood (maxCycles  - !cycles)
-            if bFood > foodToWin || rFood > foodToWin || !cycles > maxCycles then
-                if bFood > rFood then Some("Black", blackAI)
-                elif rFood > bFood then Some("Red", redAI)
+            let mutable bScore = 0
+            let mutable rScore = 0
+            for (k,v) in world |> Map.toSeq do
+                match v.Ant with
+                | None -> ()
+                | Some (ant) -> if ant.Color = AntColor.Black then bScore <- bScore + 1
+                                elif ant.Color = AntColor.Red then rScore <- rScore + 1
+
+            drawScore blackAI.Name bScore redAI.Name rScore (maxCycles  - !cycles)
+            if bScore = 0 || rScore = 0 || !cycles > maxCycles then
+                if bScore > rScore then Some("Black", blackAI)
+                elif rScore > bScore then Some("Red", redAI)
                 else None
             else None
         
