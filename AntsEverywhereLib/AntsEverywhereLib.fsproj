@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Types.fs" />
+    <Compile Include="UserTypes.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="World.fs" />
   </ItemGroup>
