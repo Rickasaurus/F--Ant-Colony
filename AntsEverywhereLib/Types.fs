@@ -9,8 +9,8 @@ module AntsEverywhereLib.Types
 
 open System
 
-let xSize = 30
-let ySize = 30
+let xSize = 15
+let ySize = 15
 let nestSize = 3
 let maxTotalFoodPerSquare = 200
 let minGeneratedFoodPerSquare = 20

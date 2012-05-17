@@ -66,27 +66,30 @@ type TestAntBehavior() =
             let minPhero = List.minBy (fun (node: AntCellView) -> node.FriendlyPheromoneQuantity)
             let noAnts = List.filter (fun (node: AntCellView) -> node.ContainsAnt)
 
-            // [snippet:Simple Pheromone-Using Ant Colony AI]
-            match me with
-            | HasFood
-            | HasMaxFood -> 
-                match locations.Cells with                    
-                | NearHome homeCells -> 
-                    match homeCells with
-                    | CanDrop dropCells -> DropFood dropCells.Head
+            // [snippet:Simple Pheromone-Using Ant Colony AI]                        
+            match locations.EnemyCells with
+            | h :: rest -> Attack h
+            | [] ->
+                match me with
+                | HasFood
+                | HasMaxFood -> 
+                    match locations.Cells with                    
+                    | NearHome homeCells -> 
+                        match homeCells with
+                        | CanDrop dropCells -> DropFood dropCells.Head
+                        | HasNoAnt noAntCells -> Move (List.random noAntCells)
+                        | _ -> Nothing
+                    | AwayFromHome allCells -> 
+                        match here.FriendlyPheromoneQuantity with
+                        | n when n < 20 -> DropPheromone (here, 100 - n)
+                        | _ -> match allCells with
+                               | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)
+                               | ShortestDistanceWithNoAnt node -> Move node
+                               | _ -> Nothing
+                | HasNoFood -> 
+                    match locations.Cells with
+                    | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)                        
+                    | HasUnownedFood foodCells -> TakeFood (maxFood foodCells)
+                    | HasPheromonesAndNoAnt pheroCells -> Move (minPhero pheroCells)
                     | HasNoAnt noAntCells -> Move (List.random noAntCells)
                     | _ -> Nothing
-                | AwayFromHome allCells -> 
-                    match here.FriendlyPheromoneQuantity with
-                    | n when n < 20 -> DropPheromone (here, 100 - n)
-                    | _ -> match allCells with
-                           | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)
-                           | ShortestDistanceWithNoAnt node -> Move node
-                           | _ -> Nothing
-            | HasNoFood -> 
-                match locations.Cells with
-                | HasNoAnt noAnts when rnd.Next(0, 3) = 0 -> Move (List.random noAnts)                        
-                | HasUnownedFood foodCells -> TakeFood (maxFood foodCells)
-                | HasPheromonesAndNoAnt pheroCells -> Move (minPhero pheroCells)
-                | HasNoAnt noAntCells -> Move (List.random noAntCells)
-                | _ -> Nothing

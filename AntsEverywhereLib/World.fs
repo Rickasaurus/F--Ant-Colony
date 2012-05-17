@@ -78,13 +78,13 @@ let getAntActions (bBehave: IAntBehavior) (rBehave: IAntBehavior) (views: (Ant *
         | AntColor.Black -> bBehave
         | AntColor.Red -> rBehave
     views |> List.map (fun (ant, cell, antView, nest) -> let behavior = getAntBehavior ant in 
-                                                            cell, behavior.Behave (AntView ant) (AntCellView (cell, ant, nest)) (AntNearbyView.FromWorldCells antView ant nest))
+                                                            cell, behavior.Behave (AntView(ant, ant)) (AntCellView (cell, ant, nest)) (AntNearbyView.FromWorldCells antView ant nest))
 let buildDependentTransaction (expectedCells: WorldCell list) actions = 
     let predicate = (fun (world: TheWorld) -> expectedCells |> List.forall (fun (cell: WorldCell) -> (Map.find cell.Id world) = cell))
     let action = (fun (iworld: TheWorld) -> 
         List.fold (fun (cworld: TheWorld) (id, action) ->
             Map.add id (action cworld.[id]) cworld) iworld actions)
-    predicate, action
+    predicate, action  
 
 let dropPheromonesInTargetCell antColor quantity target = 
     let newValue = max (target.Pheromones.[antColor] + quantity) maxCellPheromoneQuantity in 
