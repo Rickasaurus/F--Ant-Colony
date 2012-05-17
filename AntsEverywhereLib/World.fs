@@ -41,8 +41,8 @@ let emptyPheromoneSet = Map.ofSeq
                                     yield color, 0 }
 
 let defaultCell id = {Id = id; Food = 0; Ant = None; CellType = FieldCell; Pheromones = emptyPheromoneSet }
-let defaultBlackAnt = Some { Color = AntColor.Black; FoodCarried = 0 }
-let defaultRedAnt = Some { Color = AntColor.Red; FoodCarried = 0 }
+let defaultBlackAnt = Some <| Ant(AntColor.Black, 0)
+let defaultRedAnt = Some <| Ant(AntColor.Red, 0)
 
 let buildWorldInitialWorld () =
     let rnd = new System.Random() in 
@@ -103,14 +103,14 @@ let getWorldChangeTransactions actions =
                                        yield buildTransaction
                                                 [ source; target.WorldCell ]
                                                 [ target.WorldCell.Id, (fun oldtarget -> { oldtarget with Food = oldtarget.Food - foodToGet });
-                                                    source.Id, (fun oldcell -> { oldcell with Ant = Some { ant with FoodCarried = ant.FoodCarried + foodToGet } } ) ]
+                                                    source.Id, (fun oldcell -> { oldcell with Ant = Some <| ant.UpdateFood(ant.FoodCarried + foodToGet) } ) ]
             | DropFood (target) -> if target.WorldCell.Food >= maxTotalFoodPerSquare then ()
                                    else 
                                        let foodToDrop = min (maxTotalFoodPerSquare - target.WorldCell.Food) (ant.FoodCarried)
                                        yield buildTransaction
                                                 [ source; target.WorldCell ]
                                                 [ target.WorldCell.Id, (fun oldtarget -> { oldtarget with Food = oldtarget.Food + foodToDrop });
-                                                    source.Id, (fun oldcell -> { source with Ant = Some { ant with FoodCarried = ant.FoodCarried - foodToDrop } }) ] 
+                                                    source.Id, (fun oldcell -> { source with Ant = Some <| ant.UpdateFood(ant.FoodCarried - foodToDrop) }) ] 
             | DropPheromone (target, quantity) -> let newValue = max (target.WorldCell.Pheromones.[ant.Color] + quantity) maxCellPheromoneQuantity
                                                   yield buildTransaction
                                                             [ target.WorldCell ]

@@ -47,14 +47,15 @@ type WorldCellType =
         | FieldCell
         | NestCell of AntColor
 
-type Ant = {
-    Color: AntColor
-    FoodCarried: int
-    }
-    with
-        member x.IsFullOfFood = x.FoodCarried >= maxFoodAntCanCarry
-        member x.HasFood = x.FoodCarried > 0
-        member x.MaxPheromonesToDrop = maxAntDropPheromoneQunatity
+[<Struct>] 
+type Ant =
+    val Color: AntColor
+    val FoodCarried: int
+    new (color, food) = { Color = color; FoodCarried = food }
+    member internal x.UpdateFood newFood = new Ant(x.Color, newFood)
+    member x.IsFullOfFood = x.FoodCarried >= maxFoodAntCanCarry
+    member x.HasFood = x.FoodCarried > 0
+    member x.MaxPheromonesToDrop = maxAntDropPheromoneQunatity
 
 and WorldCell = {
     Id : UID
@@ -69,7 +70,8 @@ and TheWorld = Map<UID, WorldCell>
 
 type WorldChange = TheWorld -> TheWorld
 
-type Nest(ix, iy, sizex, sizey) =
+[<Struct>] 
+type Nest(ix: int, iy: int, sizex: int, sizey: int) =
     member internal t.MinX = ix
     member internal t.MinY = iy
     member internal t.MaxX = ix + sizex
@@ -81,8 +83,9 @@ type Nest(ix, iy, sizex, sizey) =
             let pow x = x * x 
             sqrt (pow(double cx - double x) + pow(double cy - double y))
     member t.CountFood (world: TheWorld) = 
-            Map.fold (fun s (k: UID) v -> if t.IsInBounds k.X k.Y then s + v.Food else s) 0 world   
+            let t = t in Map.fold (fun s (k: UID) v -> if t.IsInBounds k.X k.Y then s + v.Food else s) 0 world   
     member internal t.CellsWithMaxFood (world: TheWorld) = 
-            Map.filter (fun (k: UID) v -> t.IsInBounds k.X k.Y) world   
-            |> Map.toList
-            |> List.filter (fun (k,v) -> v.IsFullOfFood)
+            let t = t in
+                Map.filter (fun (k: UID) v -> t.IsInBounds k.X k.Y) world   
+                |> Map.toList
+                |> List.filter (fun (k,v) -> v.IsFullOfFood)
