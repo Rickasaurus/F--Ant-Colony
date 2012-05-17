@@ -1,12 +1,11 @@
-// This is Richard Minerich's F# Ant Colony Silverlight Ediiton
-// Visit my Blog at http://RichardMinerich.com
-// This code is free to be used for anything you like as long as I am properly acknowledged.
-//
-// Note that this was all hacked out with getting the most done in the least amount of time in mind.  
-// The UI code is particularly bad.  You have been warned. 
-//
-// The basic Silverlight used here is based on Phillip Trelford's Missile Command Example
-// http://www.trelford.com/blog/post/MissileCommand.aspx
-//
-// Update: Robert Pickering has added WPF support!
-// Update: Now with ant-on-ant murdering action!
+This is Richard Minerich's F# Ant Colony Silverlight Ediiton. This code is free to be used for anything you like as long as I am properly acknowledged.
+Visit my Blog at http://RichardMinerich.com
+
+Note that this was all hacked out with getting the most done in the least amount of time in mind.  The UI code is particularly bad.  You have been warned.
+
+The basic Silverlight used here is based on Phillip Trelford's Missile Command Example
+http://www.trelford.com/blog/post/MissileCommand.aspx
+
+Major Updates:
+??-??-????: Robert Pickering has added WPF support!
+05-17-2012: Now with ant-on-ant murdering action! (via Rick)
