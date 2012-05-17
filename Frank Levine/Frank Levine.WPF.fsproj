@@ -45,8 +45,8 @@
     <Compile Include="Module1.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AntsEverywhereLib\AntsEverywhereLib.WFP.fsproj">
-      <Name>AntsEverywhereLib.WFP</Name>
+    <ProjectReference Include="..\AntsEverywhereLib\AntsEverywhereLib.WPF.fsproj">
+      <Name>AntsEverywhereLib.WPF</Name>
       <Project>{da046a07-bd48-44e0-9fcb-d122bb46fdd0}</Project>
       <Private>True</Private>
     </ProjectReference>
