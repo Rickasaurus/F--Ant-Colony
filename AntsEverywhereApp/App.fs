@@ -24,12 +24,33 @@ type App() as app =
 #else
 module StartUp =
     open System
+    open System.Text.RegularExpressions
 
     let app = new Application()
     let gameController = new GameController()
 
     do  app.Exit.Add(fun _ -> (gameController :> System.IDisposable).Dispose())
     let win = new Window(Content = gameController)
-    [<STAThread>]
-    do app.Run win |> ignore
+    
+    let tryParse arg =
+      let reOPts = RegexOptions.Compiled ||| RegexOptions.IgnoreCase ||| RegexOptions.ExplicitCapture
+      let m = Regex.Match(arg,@"^(?<k>[a-z][a-z0-9_-]*),(?<v>.+)$",reOPts)
+      if not m.Success
+        then  None
+        else  Some(m.Groups.["k"].Value,m.Groups.["v"].Value)
+
+    //HACK: put this in so the start-up AI doesn't have to be hard-coded [PB]
+    [<STAThread;EntryPoint>]
+    let main args =
+      let args = args |> Array.choose (tryParse)
+      if args.Length > 0 
+        then  let blackK,blackV = args.[0]
+              if args.Length > 1 
+                then  let redK,redV = args.[1]
+                      [blackV;redV] |> gameController.AddItemsFromDisk
+                      gameController.StartWithAI blackK redK
+                else  Seq.singleton blackV |> gameController.AddItemsFromDisk
+                      gameController.StartWithAI blackK blackK
+        else  gameController.StartWithDefaults()
+      app.Run win
 #endif
