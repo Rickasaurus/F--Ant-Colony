@@ -228,7 +228,22 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
             let newAiSeq = aiDict.toSeq() |> Seq.map (fun (k, v) -> k, AIAssemblyRefernece(v))
             aiMap := Map.ofSeq (Seq.concat [ newAiSeq; Map.toSeq !aiMap ])
             refresh()
-    
+
+#if SILVERLIGHT
+     //HACK: the following function only works on WPF
+#else   
+    //HACK: put this in so the start-up AI doesn't have to be hard-coded [PB]
+    member x.addItemsFromDisk args =
+      args 
+      |> Seq.choose (fun fileName -> use stream = System.IO.File.OpenRead(fileName)
+                                     loadAIFromStream stream)
+      |> Seq.iter (fun ai -> addResolvedAIToMap ai
+                             refresh())
+#endif
+
+    //HACK: put this in so the start-up AI doesn't have to be hard-coded [PB] 
+    member x.AIMap = aiMap
+        
     [<CLIEvent>]
     member this.LoadedAIEvent = loadedAIEvent.Publish
 
