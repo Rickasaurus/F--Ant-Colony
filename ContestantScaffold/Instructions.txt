@@ -1,0 +1,15 @@
+===========================================================================
+Instructions for Ant Colony Simulation
+===========================================================================
+
+1. Change the name of the project from `RenameThisProject` to something you fancy
+
+2. Open the Library.fs file and complete the MyAnyBehavior class by providing an implementation of IAntBehavior.Name and IAntBehavior.Behave
+
+3. In the Project Properties dialog, on the 'Application' tab, change the 'Assembly name' to something you fancy
+
+4. In the Project Properties dialog, on the 'Debug' tab, in the 'Command line arguments' box
+  a. change the first occurance of `RenameThisProject` to match the value of IAntBehavior.Name (see step #2)
+  b. change the second occurance of `RenameThisProject` to the the value of 'Assembly name' (see step #3)
+
+5. All done! Now you can run/debug your ant colony just like any other Visual Studio project (e.g. pressing "F5", via the Debug menu, et cetera) 
