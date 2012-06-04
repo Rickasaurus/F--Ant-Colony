@@ -13,10 +13,10 @@ let xSize = 15
 let ySize = 15
 let nestSize = 3
 let maxTotalFoodPerSquare = 200
-let minGeneratedFoodPerSquare = 20
-let maxGeneratedFoodPerSquare = 100
+let minGeneratedFoodPerSquare = 10
+let maxGeneratedFoodPerSquare = 50
 let maxFoodAntCanCarry = 5
-let chanceOfFood = 0.04
+let chanceOfFood = 0.12
 
 let spawnFood = 50
 let maxAntWounds = 2
