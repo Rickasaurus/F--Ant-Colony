@@ -23,6 +23,13 @@ open AntsEverywhereLib.Types
 open AntsEverywhereLib.UserTypes
 open AntsEverywhereLib.World
 
+type SimulationResult = 
+    {
+        RedAI: IAntBehavior
+        BlackAI: IAntBehavior
+        Winner: IAntBehavior
+    }
+
 type SimulationControl () as this =
     inherit UserControl ()
 
@@ -30,6 +37,8 @@ type SimulationControl () as this =
     let remember disposable = disposables <- disposable :: disposables
     let dispose (d:IDisposable) = d.Dispose()
     let forget () = disposables |> List.iter dispose; disposables <- []
+
+    let simulationEndedEvent = Event<SimulationResult>();
 
     let width, height = 450.0, 450.0
     
@@ -142,10 +151,12 @@ type SimulationControl () as this =
                 world := worldCycle blackAI redAI !world
                 drawUpdates !world
                 let winner = updateScoreAndCheckForWinner !world
-                winner |> Option.iter (fun (color, ai) -> 
-                                            updateMessage (sprintf "%s (%s) Won! Click to Load Custom AI." color ai.Name)                                        
-                                            forget()
-                                            startGame blackAI redAI maxCycles)
+                match winner with
+                | None -> ()
+                | Some (color, ai) -> 
+                    updateMessage (sprintf "%s (%s) Won! Click to Load Custom AI." color ai.Name)
+                    simulationEndedEvent.Trigger({ RedAI = redAI; BlackAI = blackAI; Winner = ai })
+
             with e -> 
                 updateMessage (sprintf "%O" e.Message)
                 gameTimer.Stop()
@@ -171,9 +182,13 @@ type SimulationControl () as this =
     [<CLIEvent>]
     member this.ClickedEvent = clickedEvent.Publish
 
+    [<CLIEvent>]
+    member this.SimulationEndedEvent = simulationEndedEvent.Publish
+
     member this.StartSimulation blackAI redAI maxCylces =
         forget()
         startGame blackAI redAI maxCylces
-         
+    
+   
     interface System.IDisposable with
         member this.Dispose() = forget()

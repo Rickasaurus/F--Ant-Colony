@@ -9,8 +9,9 @@
 
 namespace AntsEverywhereApp
 
+open System
 open System.Windows
-
+open System.Text.RegularExpressions
 
 //        let generatePairs ants = 
 //            // Randomize Ants
@@ -47,8 +48,8 @@ type App() as app =
     do  app.Exit.Add(fun _ -> (gameController :> System.IDisposable).Dispose())
 #else
 module StartUp =
-    open System
-    open System.Text.RegularExpressions
+    // Parameters
+    let numCycles = 2000
 
     // F# Disposable Pattern
     let mutable disposables = []
@@ -71,15 +72,18 @@ module StartUp =
     let win = new Window(Content = mainControl)
 
     // Register Events for Interop
+    let loadAISelectionScreenHandler () = mainControl.SwitchControls selectionControl
+    do simulationControl.ClickedEvent.Subscribe loadAISelectionScreenHandler |> ignore    
+    
+    let simulationEndedHandler result = simulationControl.StartSimulation result.RedAI result.BlackAI numCycles
+    do simulationControl.SimulationEndedEvent.Subscribe simulationEndedHandler |> ignore
+
     let aiSelectedHandler (redAI, blackAI, timed) =
         simulationControl.StartSimulation redAI blackAI timed
         mainControl.SwitchControls simulationControl
     do selectionControl.AISelectedEvent.Subscribe aiSelectedHandler |> ignore 
     do selectionControl.CancelEvent.Subscribe (fun _ -> mainControl.SwitchControls simulationControl) |> ignore
 
-    let aiLoadedHandler () = mainControl.SwitchControls selectionControl
-    do simulationControl.ClickedEvent.Subscribe aiLoadedHandler |> ignore    
-    
     // Switch to the Simulation
     mainControl.SwitchControls(simulationControl)   
 
@@ -89,8 +93,6 @@ module StartUp =
       if not m.Success
         then  None
         else  Some(m.Groups.["k"].Value,m.Groups.["v"].Value)
-
-    let numCycles = 1500
 
     [<STAThread;EntryPoint>]
     let main args =
