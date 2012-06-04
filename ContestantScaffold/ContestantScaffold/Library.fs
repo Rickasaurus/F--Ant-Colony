@@ -8,3 +8,4 @@ type MyAntBehavior() =
         member __.Behave me here locations = 
           (* put your ant colony behavior here *)
           Nothing
+          

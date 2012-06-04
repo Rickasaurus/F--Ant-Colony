@@ -22,9 +22,9 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Debug\ContestantScaffold.XML</DocumentationFile>
     <StartAction>Program</StartAction>
-    <StartProgram>C:\Developer\F--Ant-Colony\ContestantScaffold\tools\AntsEverywhereApp.exe</StartProgram>
-    <StartWorkingDirectory>C:\Developer\F--Ant-Colony\ContestantScaffold\tools\</StartWorkingDirectory>
-    <StartArguments>RenameThisProject,"..\ContestantScaffold\bin\Debug\RenameThisProject.dll"</StartArguments>
+    <StartProgram>.\tools\AntsEverywhereApp.exe</StartProgram>
+    <StartWorkingDirectory>.\tools\</StartWorkingDirectory>
+    <StartArguments>RenameThisProject,".\ContestantScaffold\bin\Debug\RenameThisProject.dll"</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>

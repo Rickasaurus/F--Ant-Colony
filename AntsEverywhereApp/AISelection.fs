@@ -62,7 +62,19 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     // Event for when we are done picking AI
     //
 
-    let loadedAIEvent = new Event<IAntBehavior * IAntBehavior * int>()
+    let aiSelectedEvent = new Event<IAntBehavior * IAntBehavior * int>()
+
+    //
+    // Event for when we are running a contest
+    //
+
+    let contestStartedEvent = new Event<IAntBehavior [] * int>()
+
+    //
+    // Event to Cancel out
+    //
+
+    let cancelEvent = new Event<unit>()
 
     //
     // Yay, pretty graphics
@@ -98,10 +110,12 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     let loadButton = Button(Content="Load AI!", Margin = Thickness 5.0)
     let startButton = Button(Content="Let's Go!", Margin = Thickness 5.0)
     let contestButton = Button(Content="Run Contest!", Margin = Thickness 5.0)
+    let cancelButton = Button(Content="Cancel!", Margin = Thickness 5.0)
 
     do  buttonStackPanel.Children.SafeAdd loadButton
         buttonStackPanel.Children.SafeAdd startButton
         buttonStackPanel.Children.SafeAdd contestButton
+        buttonStackPanel.Children.SafeAdd cancelButton
         globalStackPanel.Children.SafeAdd buttonStackPanel
 
     //
@@ -214,32 +228,12 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         | None, None -> headerText.Text <- "Neither AI Could Be Loaded!"
         | None, Some redAI -> headerText.Text <- "Black AI Couldn't Be Loaded!"
         | Some blackAI, None -> headerText.Text <- "Red AI Couldn't Be Loaded!"
-        | Some blackAI, Some redAI -> loadedAIEvent.Trigger(blackAI, redAI, timed)
+        | Some blackAI, Some redAI -> aiSelectedEvent.Trigger(blackAI, redAI, timed)
 
     let contestButtonClicked () =
         let loadedAI = (!aiMap) |> Map.toArray |> Array.map (fun (_, ai) -> resolveAI ai) |> Array.choose id
-        let generatePairs ants = 
-            // Randomize Ants
-            let rndAIs = let rnd = System.Random() in ants |> Array.sortBy (fun _ -> rnd.Next())
-            let len = Array.length rndAIs
-
-            let pairs = 
-                [
-                    for i in 1 .. 2 .. len - 1 do
-                        let red = rndAIs.[i - 1] 
-                        let black = rndAIs.[i]
-                        yield red, black
-                ]
-            let rem = if len % 2 = 1 then [rndAIs.[len - 1]] else []
-            pairs, rem
-
         let timed =  Int32.Parse timeTextBox.Text
-        let contestIsGoing = ref true
-        let remainingAnts = ref loadedAI
-        while !contestIsGoing do
-            let randomPairs, remainder = generatePairs !remainingAnts
-            for redAI, blackAI in randomPairs do
-                loadedAIEvent.Trigger(blackAI, redAI, timed)
+        contestStartedEvent.Trigger(loadedAI, timed)
 
     do loadButton.Click.Subscribe (fun _ -> try loadButtonClicked() with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
     do startButton.Click.Subscribe (fun _ -> 
@@ -249,7 +243,9 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
                                             else
                                                 startButtonClicked() 
                                         with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
-    do contestButton.Click.Subscribe (fun _ -> ()) |> remember
+    do contestButton.Click.Subscribe (fun _ -> contestButtonClicked()) |> remember
+    do cancelButton.Click.Subscribe (fun _ -> cancelEvent.Trigger()) |> remember
+
     //
     // Start things up
     //
@@ -282,7 +278,13 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     member x.AIMap = aiMap
         
     [<CLIEvent>]
-    member this.LoadedAIEvent = loadedAIEvent.Publish
+    member this.AISelectedEvent = aiSelectedEvent.Publish
+
+    [<CLIEvent>]
+    member this.ContestStartedEvent = contestStartedEvent.Publish
+
+    [<CLIEvent>]
+    member this.CancelEvent = cancelEvent.Publish
 
     interface System.IDisposable with
         member this.Dispose() = forget()

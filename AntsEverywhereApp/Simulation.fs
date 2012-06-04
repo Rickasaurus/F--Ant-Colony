@@ -110,6 +110,7 @@ type SimulationControl () as this =
                                      if cell.Food > 0 then drawFood ox oy                                     
                                      if cell.Ant.IsSome then drawAnt ox oy cell.Ant.Value.Color)
 
+    let gameTimer = DispatcherTimer()
     let rec startGame (blackAI : IAntBehavior) (redAI : IAntBehavior) maxCycles  = 
         let world = ref (buildWorldInitialWorld())
         drawUpdates !world
@@ -133,10 +134,9 @@ type SimulationControl () as this =
                 elif rScore > bScore then Some("Red", redAI)
                 else None
             else None
-        
-        let timer = DispatcherTimer()
-        timer.Interval <- TimeSpan.FromMilliseconds(10.0)
-        timer.Tick
+
+        gameTimer.Interval <- TimeSpan.FromMilliseconds(10.0)
+        gameTimer.Tick
         |> Observable.subscribe (fun _ ->
             try
                 world := worldCycle blackAI redAI !world
@@ -148,15 +148,17 @@ type SimulationControl () as this =
                                             startGame blackAI redAI maxCycles)
             with e -> 
                 updateMessage (sprintf "%O" e.Message)
-                timer.Stop()
+                gameTimer.Stop()
         )
         |> remember
-        timer.Start()
+        gameTimer.Start()
 
-        {new IDisposable with member this.Dispose() = timer.Stop()}
+        {new IDisposable with member this.Dispose() = gameTimer.Stop()}
         |> remember
 
-    let loadAIEvent = new Event<_>()
+    do this.IsVisibleChanged.Subscribe (fun (args: DependencyPropertyChangedEventArgs) -> if (args.NewValue :?> bool) then gameTimer.Start() else gameTimer.Stop() ) |> ignore
+
+    let clickedEvent = new Event<_>()
 
     do  layout.Children.SafeAdd canvas
         this.Content <- layout
@@ -164,12 +166,10 @@ type SimulationControl () as this =
     do 
         updateMessage "Click to Change AI."
         this.MouseLeftButtonUp
-        |> Event.add (fun _ -> 
-            forget()
-            loadAIEvent.Trigger())
+        |> Event.add (fun _ -> clickedEvent.Trigger())
     
     [<CLIEvent>]
-    member this.LoadAIEvent = loadAIEvent.Publish
+    member this.ClickedEvent = clickedEvent.Publish
 
     member this.StartSimulation blackAI redAI maxCylces =
         forget()

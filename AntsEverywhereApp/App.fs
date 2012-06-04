@@ -11,6 +11,30 @@ namespace AntsEverywhereApp
 
 open System.Windows
 
+
+//        let generatePairs ants = 
+//            // Randomize Ants
+//            let rndAIs = let rnd = System.Random() in ants |> Array.sortBy (fun _ -> rnd.Next())
+//            let len = Array.length rndAIs
+//
+//            let pairs = 
+//                [
+//                    for i in 1 .. 2 .. len - 1 do
+//                        let red = rndAIs.[i - 1] 
+//                        let black = rndAIs.[i]
+//                        yield red, black
+//                ]
+//            let rem = if len % 2 = 1 then [rndAIs.[len - 1]] else []
+//            pairs, rem
+//
+//        let timed =  Int32.Parse timeTextBox.Text
+//        let contestIsGoing = ref true
+//        let remainingAnts = ref loadedAI
+//        while !contestIsGoing do
+//            let randomPairs, remainder = generatePairs !remainingAnts
+//            for redAI, blackAI in randomPairs do
+//                aiSelectedEvent.Trigger(blackAI, redAI, timed)
+
 #if SILVERLIGHT
 type App() as app =
     inherit Application()
@@ -26,14 +50,17 @@ module StartUp =
     open System
     open System.Text.RegularExpressions
 
+    // F# Disposable Pattern
     let mutable disposables = []
     let remember (disposable : IDisposable) = disposables <- disposable :: disposables
     let dispose (d:IDisposable) = d.Dispose()
     let forget () = disposables |> List.iter dispose; disposables <- []
 
+    // Set up App
     let app = new Application()
     do  app.Exit.Add(fun _ -> (forget()))
 
+    // Load Controls / Windows
     let mainControl = new MainScreen()
     do  remember mainControl
     let simulationControl = new SimulationControl()
@@ -41,13 +68,19 @@ module StartUp =
     let defaultAI = AI.TestAntBehavior() :> AntsEverywhereLib.UserTypes.IAntBehavior
     let selectionControl = new AISelectionControl(defaultAI)
     do  remember selectionControl
-
     let win = new Window(Content = mainControl)
-    do selectionControl.LoadedAIEvent.Subscribe (fun (redAI, blackAI, timed) -> 
-        simulationControl.StartSimulation redAI blackAI timed
-        mainControl.SwitchControls simulationControl) |> ignore
-    do simulationControl.LoadAIEvent.Subscribe (fun _ -> mainControl.SwitchControls selectionControl) |> ignore    
 
+    // Register Events for Interop
+    let aiSelectedHandler (redAI, blackAI, timed) =
+        simulationControl.StartSimulation redAI blackAI timed
+        mainControl.SwitchControls simulationControl
+    do selectionControl.AISelectedEvent.Subscribe aiSelectedHandler |> ignore 
+    do selectionControl.CancelEvent.Subscribe (fun _ -> mainControl.SwitchControls simulationControl) |> ignore
+
+    let aiLoadedHandler () = mainControl.SwitchControls selectionControl
+    do simulationControl.ClickedEvent.Subscribe aiLoadedHandler |> ignore    
+    
+    // Switch to the Simulation
     mainControl.SwitchControls(simulationControl)   
 
     let tryParse arg =
