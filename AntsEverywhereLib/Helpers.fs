@@ -20,16 +20,18 @@ module Array2D =
 module Array =
     let randomPermute a =
         let n = Array.length a
-        let rand = new Random()
-        let rec aux = function
-            | 0 -> a
-            | k ->
-                let i = rand.Next(k+1)
-                let tmp = a.[i]
-                a.[i] <- a.[k]
-                a.[k] <- tmp
-                aux (k-1)
-        aux (n-1)
+        if n > 0 then
+            let rand = new Random()
+            let rec aux = function
+                | 0 -> a
+                | k ->
+                    let i = rand.Next(k+1)
+                    let tmp = a.[i]
+                    a.[i] <- a.[k]
+                    a.[k] <- tmp
+                    aux (k-1)
+            aux (n-1)
+        else a
 
 module Seq = 
     let randomPermute a =
