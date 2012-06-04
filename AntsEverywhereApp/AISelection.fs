@@ -90,11 +90,15 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
        globalStackPanel.Children.SafeAdd listStackPanel
        globalStackPanel.Children.SafeAdd timedGameStackPanel
 
+    // Create Buttons
+
     let buttonStackPanel = new StackPanel(Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
+    let loadAllButton = Button(Content="Load All AI")
     let loadButton = Button(Content="Load AI")
     let startButton = Button(Content="Let's Go!")
 
     do  buttonStackPanel.Children.SafeAdd loadButton
+        buttonStackPanel.Children.SafeAdd loadAllButton
         buttonStackPanel.Children.SafeAdd startButton
         globalStackPanel.Children.SafeAdd buttonStackPanel
 
@@ -157,21 +161,25 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
 #if SILVERLIGHT
             let ofd = new OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = false)
 #else
-            let ofd = new Microsoft.Win32.OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = false)
+            let ofd = new Microsoft.Win32.OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = true)
 #endif
 
             let clicked = ofd.ShowDialog()
             if clicked.HasValue && clicked.Value then 
 #if SILVERLIGHT
                 use stream = ofd.File.OpenRead()
+                [ loadAIFromStream stream ]
 #else
-                use stream = System.IO.File.OpenRead(ofd.FileName)
+                [ 
+                    for filename in ofd.FileNames do
+                        use stream = System.IO.File.OpenRead(ofd.FileName)
+                        yield! loadAIFromStream stream |> Option.toList 
+                ]
 #endif
-                loadAIFromStream stream
-            else None        
+            else []  
         with 
         | e -> headerText.Text <- sprintf "%O" e.Message
-               None
+               []
 
     //
     // Configure Button Actions
@@ -179,9 +187,10 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
 
     let loadButtonClicked () = 
         match loadAIFromDisk() with
-        | Some(ai) -> addResolvedAIToMap ai
-                      refresh()
-        | None -> ()
+        | [] -> ()
+        | ais -> for ai in ais do 
+                    addResolvedAIToMap ai
+                    refresh()
  
     let resolveToAI selectedItem = 
         match Map.find selectedItem !aiMap with
