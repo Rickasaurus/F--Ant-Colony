@@ -123,7 +123,7 @@ let getWorldChangeTransactions actions =
                                                 [ target.WorldCell.Id, (fun oldtarget -> { oldtarget with Food = oldtarget.Food + foodToDrop });
                                                   source.Id,           (fun oldcell -> { source with Ant = Some <| ant.UpdateFood(ant.FoodCarried - foodToDrop) }) ] 
             | DropPheromone (target, quantity) -> yield buildDependentTransaction [] [ target.WorldCell.Id, dropPheromonesInTargetCell ant.Color quantity ]
-            | Attack (target) -> yield buildDependentTransaction [] [ target.WorldCell.Id, woundAntInTargetCell ]
+            | Attack (target) -> yield buildDependentTransaction [ source; target.WorldCell ] [ target.WorldCell.Id, woundAntInTargetCell ]
     }
 
 
