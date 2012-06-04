@@ -56,7 +56,8 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     // This AI map holds both loaded and unloaded AI
     //
     
-    let aiMap = ref (Map.ofSeq <| seq { yield defaultAI.Name, AIResolved(defaultAI) })
+    let aiMap = new Dictionary<String,AIType>();
+    do aiMap.Add(defaultAI.Name, AIResolved(defaultAI))
 
     //
     // Event for when we are done picking AI
@@ -125,16 +126,19 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     let refresh () =
         leftList.Items.Clear()
         rightList.Items.Clear()
-        !aiMap |> Map.iter (fun key value ->  
-                               leftList.Items.SafeAdd(new ListBoxItem(Content = key) )    
-                               rightList.Items.SafeAdd(new ListBoxItem(Content = key) ))
+        aiMap |> Seq.iter (fun kv ->  
+                               leftList.Items.SafeAdd(new ListBoxItem(Content = kv.Key) )    
+                               rightList.Items.SafeAdd(new ListBoxItem(Content = kv.Key) ))
 
     //
     // Reflection based AI Loading
     //
 
     let addResolvedAIToMap (ai : IAntBehavior) = 
-        aiMap := Map.add ai.Name (AIResolved(ai)) !aiMap   
+        if not <| aiMap.ContainsKey ai.Name then
+            aiMap.Add(ai.Name, AIResolved(ai))
+        else
+            do MessageBox.Show("Warning. AI Discarded due to same name: " + ai.Name) |> ignore
 
     let loadAIFromStream (stream : System.IO.Stream) =
         try
@@ -188,7 +192,7 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
 #else
                 [ 
                     for filename in ofd.FileNames do
-                        use stream = System.IO.File.OpenRead(ofd.FileName)
+                        use stream = System.IO.File.OpenRead(filename)
                         yield! loadAIFromStream stream |> Option.toList 
                 ]
 #endif
@@ -210,11 +214,11 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         | [] -> ()
         | ais -> for ai in ais do 
                     addResolvedAIToMap ai
-                    refresh()
+                 refresh()
 
     let startButtonClicked () = 
         let resolveToAI selectedItem = 
-            Map.find selectedItem !aiMap |> resolveAI
+            aiMap.[selectedItem] |> resolveAI
 
         let listBoxItemToString (obj: obj) = 
             let lba = obj :?> ListBoxItem
@@ -231,7 +235,7 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         | Some blackAI, Some redAI -> aiSelectedEvent.Trigger(blackAI, redAI, timed)
 
     let contestButtonClicked () =
-        let loadedAI = (!aiMap) |> Map.toArray |> Array.map (fun (_, ai) -> resolveAI ai) |> Array.choose id
+        let loadedAI = aiMap |> Seq.map (fun kv -> resolveAI kv.Value) |> Seq.choose id |> Seq.toArray
         let timed =  Int32.Parse timeTextBox.Text
         contestStartedEvent.Trigger(loadedAI, timed)
 
@@ -260,7 +264,8 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     member x.addItems (aiDict : IDictionary<string,string>) =
         if aiDict <> null then
             let newAiSeq = aiDict.toSeq() |> Seq.map (fun (k, v) -> k, AIAssemblyRefernece(v))
-            aiMap := Map.ofSeq (Seq.concat [ newAiSeq; Map.toSeq !aiMap ])
+            for (k,v) in newAiSeq do
+                aiMap.Add(k, v)
             refresh()
 
 #if SILVERLIGHT

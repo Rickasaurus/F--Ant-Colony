@@ -11,22 +11,10 @@ namespace AntsEverywhereApp
 
 open System
 open System.Windows
+open System.Windows.Controls
 open System.Text.RegularExpressions
 
-//        let generatePairs ants = 
-//            // Randomize Ants
-//            let rndAIs = let rnd = System.Random() in ants |> Array.sortBy (fun _ -> rnd.Next())
-//            let len = Array.length rndAIs
-//
-//            let pairs = 
-//                [
-//                    for i in 1 .. 2 .. len - 1 do
-//                        let red = rndAIs.[i - 1] 
-//                        let black = rndAIs.[i]
-//                        yield red, black
-//                ]
-//            let rem = if len % 2 = 1 then [rndAIs.[len - 1]] else []
-//            pairs, rem
+
 //
 //        let timed =  Int32.Parse timeTextBox.Text
 //        let contestIsGoing = ref true
@@ -49,7 +37,7 @@ type App() as app =
 #else
 module StartUp =
     // Parameters
-    let numCycles = 2000
+    let numCycles = 1500
 
     // F# Disposable Pattern
     let mutable disposables = []
@@ -83,6 +71,92 @@ module StartUp =
         mainControl.SwitchControls simulationControl
     do selectionControl.AISelectedEvent.Subscribe aiSelectedHandler |> ignore 
     do selectionControl.CancelEvent.Subscribe (fun _ -> mainControl.SwitchControls simulationControl) |> ignore
+
+    let contestmodeHandler (ants, cycles) = 
+        let ants = ants |> Array.toList
+        let generatePairs ants = 
+            // Randomize Ants
+            let rndAIs = let rnd = System.Random() in ants |> List.sortBy (fun _ -> rnd.Next())
+            let len = List.length rndAIs
+
+            let pairs = 
+                [
+                    for i in 1 .. 2 .. len - 1 do
+                        let red = rndAIs.[i - 1] 
+                        let black = rndAIs.[i]
+                        yield red, black
+                ]
+            let rem = if len % 2 = 1 then [rndAIs.[len - 1]] else []
+            pairs, rem       
+        async {
+            let nextRoundAnts = ref ants
+            while List.length !nextRoundAnts > 1 do
+                let trf, leftoverAnt = generatePairs (!nextRoundAnts)
+                let thisRoundPairs = ref trf
+                nextRoundAnts := leftoverAnt
+                
+                let contestRows, contestColumns =
+                    match List.length !thisRoundPairs with
+                    | 1 -> 1,1
+                    | 2 -> 1,2
+                    | _ -> 2,2
+
+                let grid = new Grid(HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, ShowGridLines = true)
+
+                // Add Rows and Columns
+                do List.init contestRows (fun _ -> new RowDefinition()) |> List.iter grid.RowDefinitions.Add
+                do List.init contestColumns (fun _ -> new ColumnDefinition()) |> List.iter grid.ColumnDefinitions.Add
+
+                // Init Simulation Controls
+                let scs = List.init contestRows (fun _ -> List.init contestColumns (fun _ -> new SimulationControl()))
+                let init r c sc = Grid.SetRow (sc, r); Grid.SetColumn (sc, c); grid.Children.SafeAdd (sc) |> ignore
+                scs |> List.iteri (fun r l -> l |> List.iteri (fun c sc -> init r c sc))
+                let flatScs = List.collect id scs
+                mainControl.SwitchControls grid
+
+                // Count running events
+                let sims = ref 0
+                let rec mergeEvents (lst: SimulationControl list) event = 
+                    match lst with
+                    | [] -> event
+                    | h :: rest -> 
+                        match event with
+                        | Some event -> mergeEvents rest (Some <| Event.merge h.SimulationEndedEvent event)
+                        | None -> mergeEvents rest (Some <| h.SimulationEndedEvent)
+                
+                // Keep count and keep winners updated
+                let merged = mergeEvents flatScs None 
+                merged 
+                |> Option.iter (fun ev -> 
+                    ev |> Event.add (fun args -> nextRoundAnts := args.Winner :: !nextRoundAnts; sims := !sims - 1))
+
+                // Start initial simulations
+                for sc in flatScs do
+                    match !thisRoundPairs with
+                    | (r,b) :: rest -> 
+                        thisRoundPairs := rest
+                        sims := !sims + 1
+                        sc.StartSimulation r b numCycles
+                    | [] -> ()
+
+                // Keep it going
+                match merged with 
+                | None -> ()
+                | Some (me) -> 
+                    for (r,b) in !thisRoundPairs do
+                        let! args = Async.AwaitEvent(me)
+                        args.Control.StartSimulation r b numCycles
+
+                while !sims <> 0 do
+                    do! Async.Sleep(50)           
+
+            let winner = List.head !nextRoundAnts
+            do MessageBox.Show("The winner of the contest is: " + winner.Name, "Contest Winner!", MessageBoxButton.OK, MessageBoxImage.Information) |> ignore
+
+        } |> Async.StartImmediate
+        
+
+    do selectionControl.ContestStartedEvent.Subscribe contestmodeHandler |> ignore
 
     // Switch to the Simulation
     mainControl.SwitchControls(simulationControl)   

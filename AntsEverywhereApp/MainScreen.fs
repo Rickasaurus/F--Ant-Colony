@@ -32,13 +32,8 @@ type MainScreen () as this =
     let dispose (d:IDisposable) = d.Dispose()
     let forget () = disposables |> List.iter dispose; disposables <- []
 
-    let outerLayout = new StackPanel()
-    let layout = Grid()
-    do this.Content <- layout
-
     member t.SwitchControls newControl = 
-        layout.Children.Clear()
-        layout.Children.SafeAdd newControl
-
+        do this.Content <- newControl
+      
     interface System.IDisposable with
         member this.Dispose() = forget()

@@ -18,6 +18,7 @@ open System.Windows.Input
 open System.Windows.Media
 open System.Windows.Shapes
 open System.Windows.Threading
+open System.Threading.Tasks
 
 open AntsEverywhereLib.Types
 open AntsEverywhereLib.UserTypes
@@ -28,9 +29,10 @@ type SimulationResult =
         RedAI: IAntBehavior
         BlackAI: IAntBehavior
         Winner: IAntBehavior
+        Control: SimulationControl
     }
 
-type SimulationControl () as this =
+and SimulationControl () as this =
     inherit UserControl ()
 
     let mutable disposables = []
@@ -52,6 +54,7 @@ type SimulationControl () as this =
 #endif
 
     let layout = Grid()
+    let syncCtxt = System.Threading.SynchronizationContext.Current 
 
     let mutable lastScore = None
     let updateScore s =
@@ -144,19 +147,24 @@ type SimulationControl () as this =
                 else None
             else None
 
+        let updateworld = 
+            async {
+                world := worldCycle blackAI redAI !world 
+            }
+
         gameTimer.Interval <- TimeSpan.FromMilliseconds(10.0)
         gameTimer.Tick
         |> Observable.subscribe (fun _ ->
             try
-                world := worldCycle blackAI redAI !world
+                Async.StartImmediate updateworld
                 drawUpdates !world
                 let winner = updateScoreAndCheckForWinner !world
                 match winner with
-                | None -> ()
-                | Some (color, ai) -> 
-                    updateMessage (sprintf "%s (%s) Won! Click to Load Custom AI." color ai.Name)
-                    simulationEndedEvent.Trigger({ RedAI = redAI; BlackAI = blackAI; Winner = ai })
-
+                    | None -> ()
+                    | Some (color, ai) ->
+                        updateMessage (sprintf "%s (%s) Won!" color ai.Name)
+                        gameTimer.Stop()
+                        simulationEndedEvent.Trigger({ RedAI = redAI; BlackAI = blackAI; Winner = ai; Control = this })
             with e -> 
                 updateMessage (sprintf "%O" e.Message)
                 gameTimer.Stop()
@@ -164,18 +172,16 @@ type SimulationControl () as this =
         |> remember
         gameTimer.Start()
 
-        {new IDisposable with member this.Dispose() = gameTimer.Stop()}
-        |> remember
+        {new IDisposable with member this.Dispose() = gameTimer.Stop()} |> remember
 
     do this.IsVisibleChanged.Subscribe (fun (args: DependencyPropertyChangedEventArgs) -> if (args.NewValue :?> bool) then gameTimer.Start() else gameTimer.Stop() ) |> ignore
-
     let clickedEvent = new Event<_>()
 
     do  layout.Children.SafeAdd canvas
         this.Content <- layout
 
     do 
-        updateMessage "Click to Change AI."
+        updateMessage ""
         this.MouseLeftButtonUp
         |> Event.add (fun _ -> clickedEvent.Trigger())
     
@@ -189,6 +195,7 @@ type SimulationControl () as this =
         forget()
         startGame blackAI redAI maxCylces
     
+    member this.IsRunning = gameTimer.IsEnabled
    
     interface System.IDisposable with
         member this.Dispose() = forget()
