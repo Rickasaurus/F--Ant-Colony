@@ -26,12 +26,30 @@ module StartUp =
     open System
     open System.Text.RegularExpressions
 
-    let app = new Application()
-    let gameController = new GameController()
+    let mutable disposables = []
+    let remember (disposable : IDisposable) = disposables <- disposable :: disposables
+    let dispose (d:IDisposable) = d.Dispose()
+    let forget () = disposables |> List.iter dispose; disposables <- []
 
-    do  app.Exit.Add(fun _ -> (gameController :> System.IDisposable).Dispose())
-    let win = new Window(Content = gameController)
-    
+    let app = new Application()
+    do  app.Exit.Add(fun _ -> (forget()))
+
+    let mainControl = new MainScreen()
+    do  remember mainControl
+    let simulationControl = new SimulationControl()
+    do  remember simulationControl
+    let defaultAI = AI.TestAntBehavior() :> AntsEverywhereLib.UserTypes.IAntBehavior
+    let selectionControl = new AISelectionControl(defaultAI)
+    do  remember selectionControl
+
+    let win = new Window(Content = mainControl)
+    do selectionControl.LoadedAIEvent.Subscribe (fun (redAI, blackAI, timed) -> 
+        simulationControl.StartSimulation redAI blackAI timed
+        mainControl.SwitchControls simulationControl) |> ignore
+    do simulationControl.LoadAIEvent.Subscribe (fun _ -> mainControl.SwitchControls selectionControl) |> ignore    
+
+    mainControl.SwitchControls(simulationControl)   
+
     let tryParse arg =
       let reOPts = RegexOptions.Compiled ||| RegexOptions.IgnoreCase ||| RegexOptions.ExplicitCapture
       let m = Regex.Match(arg,@"^(?<k>[a-z][a-z0-9_-]*),(?<v>.+)$",reOPts)
@@ -39,18 +57,15 @@ module StartUp =
         then  None
         else  Some(m.Groups.["k"].Value,m.Groups.["v"].Value)
 
-    //HACK: put this in so the start-up AI doesn't have to be hard-coded [PB]
+    let numCycles = 1500
+
     [<STAThread;EntryPoint>]
     let main args =
-      let args = args |> Array.choose (tryParse)
-      if args.Length > 0 
-        then  let blackK,blackV = args.[0]
-              if args.Length > 1 
-                then  let redK,redV = args.[1]
-                      [blackV;redV] |> gameController.AddItemsFromDisk
-                      gameController.StartWithAI blackK redK
-                else  Seq.singleton blackV |> gameController.AddItemsFromDisk
-                      gameController.StartWithAI blackK blackK
-        else  gameController.StartWithDefaults()
-      app.Run win
+        let antfiles = args |> Array.choose (tryParse) |> Array.map (fun (k,v) -> v)
+        let antAI = selectionControl.addItemsFromDisk antfiles
+        match antAI |> List.ofSeq with
+        | b::r::rest -> simulationControl.StartSimulation b r numCycles
+        | b::[] -> simulationControl.StartSimulation b defaultAI numCycles
+        | [] -> simulationControl.StartSimulation defaultAI defaultAI numCycles
+        app.Run win
 #endif

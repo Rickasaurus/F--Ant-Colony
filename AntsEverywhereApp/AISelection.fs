@@ -20,6 +20,7 @@ open System.Windows.Shapes
 open System.Windows.Threading
 open System.Reflection
 open System.Net
+open System.IO
 
 open AntsEverywhereLib.Types
 open AntsEverywhereLib.UserTypes
@@ -93,13 +94,14 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     // Create Buttons
 
     let buttonStackPanel = new StackPanel(Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center)
-    let loadAllButton = Button(Content="Load All AI")
-    let loadButton = Button(Content="Load AI")
-    let startButton = Button(Content="Let's Go!")
+
+    let loadButton = Button(Content="Load AI!", Margin = Thickness 5.0)
+    let startButton = Button(Content="Let's Go!", Margin = Thickness 5.0)
+    let contestButton = Button(Content="Run Contest!", Margin = Thickness 5.0)
 
     do  buttonStackPanel.Children.SafeAdd loadButton
-        buttonStackPanel.Children.SafeAdd loadAllButton
         buttonStackPanel.Children.SafeAdd startButton
+        buttonStackPanel.Children.SafeAdd contestButton
         globalStackPanel.Children.SafeAdd buttonStackPanel
 
     //
@@ -118,7 +120,7 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     //
 
     let addResolvedAIToMap (ai : IAntBehavior) = 
-        aiMap := Map.add ai.Name (AIResolved(ai)) !aiMap
+        aiMap := Map.add ai.Name (AIResolved(ai)) !aiMap   
 
     let loadAIFromStream (stream : System.IO.Stream) =
         try
@@ -181,6 +183,10 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         | e -> headerText.Text <- sprintf "%O" e.Message
                []
 
+    let resolveAI ai = 
+        match ai with
+        | AIResolved behavior -> Some behavior
+        | AIAssemblyRefernece reference -> loadAIFromWeb( Uri(reference) )    
     //
     // Configure Button Actions
     //
@@ -191,13 +197,11 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         | ais -> for ai in ais do 
                     addResolvedAIToMap ai
                     refresh()
- 
-    let resolveToAI selectedItem = 
-        match Map.find selectedItem !aiMap with
-        | AIResolved behavior -> Some behavior
-        | AIAssemblyRefernece reference -> loadAIFromWeb( Uri(reference) )
 
     let startButtonClicked () = 
+        let resolveToAI selectedItem = 
+            Map.find selectedItem !aiMap |> resolveAI
+
         let listBoxItemToString (obj: obj) = 
             let lba = obj :?> ListBoxItem
             lba.Content :?> string
@@ -212,15 +216,40 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         | Some blackAI, None -> headerText.Text <- "Red AI Couldn't Be Loaded!"
         | Some blackAI, Some redAI -> loadedAIEvent.Trigger(blackAI, redAI, timed)
 
+    let contestButtonClicked () =
+        let loadedAI = (!aiMap) |> Map.toArray |> Array.map (fun (_, ai) -> resolveAI ai) |> Array.choose id
+        let generatePairs ants = 
+            // Randomize Ants
+            let rndAIs = let rnd = System.Random() in ants |> Array.sortBy (fun _ -> rnd.Next())
+            let len = Array.length rndAIs
+
+            let pairs = 
+                [
+                    for i in 1 .. 2 .. len - 1 do
+                        let red = rndAIs.[i - 1] 
+                        let black = rndAIs.[i]
+                        yield red, black
+                ]
+            let rem = if len % 2 = 1 then [rndAIs.[len - 1]] else []
+            pairs, rem
+
+        let timed =  Int32.Parse timeTextBox.Text
+        let contestIsGoing = ref true
+        let remainingAnts = ref loadedAI
+        while !contestIsGoing do
+            let randomPairs, remainder = generatePairs !remainingAnts
+            for redAI, blackAI in randomPairs do
+                loadedAIEvent.Trigger(blackAI, redAI, timed)
+
     do loadButton.Click.Subscribe (fun _ -> try loadButtonClicked() with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
-       startButton.Click.Subscribe (fun _ -> 
+    do startButton.Click.Subscribe (fun _ -> 
                                         try 
                                             if leftList.SelectedValue = null || rightList.SelectedValue = null then
                                                 headerText.Text <- "Must select a black and red stategy"
                                             else
                                                 startButtonClicked() 
                                         with e -> headerText.Text <- sprintf "%O" e.Message) |> remember
-
+    do contestButton.Click.Subscribe (fun _ -> ()) |> remember
     //
     // Start things up
     //
@@ -243,11 +272,10 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
 #else   
     //HACK: put this in so the start-up AI doesn't have to be hard-coded [PB]
     member x.addItemsFromDisk args =
-      args 
-      |> Seq.choose (fun fileName -> use stream = System.IO.File.OpenRead(fileName)
-                                     loadAIFromStream stream)
-      |> Seq.iter (fun ai -> addResolvedAIToMap ai
-                             refresh())
+        let loaded = args |> Seq.choose (fun fileName -> use stream = File.OpenRead(fileName) in loadAIFromStream stream)
+        loaded |> Seq.iter (fun ai -> addResolvedAIToMap ai; refresh())
+        loaded
+
 #endif
 
     //HACK: put this in so the start-up AI doesn't have to be hard-coded [PB] 
