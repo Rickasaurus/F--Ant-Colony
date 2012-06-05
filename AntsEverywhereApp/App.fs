@@ -105,7 +105,7 @@ module StartUp =
                     | 2 -> 1,2
                     | _ -> 2,2
 
-                let grid = new Grid(HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, ShowGridLines = true)
+                let grid = new Grid(HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, ShowGridLines = true)
 
                 // Add Rows and Columns
                 do List.init contestRows (fun _ -> new RowDefinition()) |> List.iter grid.RowDefinitions.Add
