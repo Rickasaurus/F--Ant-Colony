@@ -10,19 +10,15 @@
 namespace AntsEverywhereApp
 
 open System
+open System.Text
+open System.IO
 open System.Windows
 open System.Windows.Controls
 open System.Text.RegularExpressions
 
-
-//
-//        let timed =  Int32.Parse timeTextBox.Text
-//        let contestIsGoing = ref true
-//        let remainingAnts = ref loadedAI
-//        while !contestIsGoing do
-//            let randomPairs, remainder = generatePairs !remainingAnts
-//            for redAI, blackAI in randomPairs do
-//                aiSelectedEvent.Trigger(blackAI, redAI, timed)
+open AntsEverywhereLib.Types
+open AntsEverywhereLib.UserTypes
+open AntsEverywhereLib.World
 
 #if SILVERLIGHT
 type App() as app =
@@ -37,6 +33,9 @@ type App() as app =
 #else
 module StartUp =
     // Parameters
+    let logfile = "antwars.log"
+    let logsb = new StringBuilder()
+
     let numCycles = 1500
 
     // F# Disposable Pattern
@@ -73,6 +72,9 @@ module StartUp =
     do selectionControl.CancelEvent.Subscribe (fun _ -> mainControl.SwitchControls simulationControl) |> ignore
 
     let contestmodeHandler (ants, cycles) = 
+        do logsb.AppendLine("--- Starting Contest ---") |> ignore
+        do ants |> Array.iter (fun (ant: IAntBehavior) -> logsb.AppendLine(ant.Name) |> ignore)
+
         let ants = ants |> Array.toList
         let generatePairs ants = 
             // Randomize Ants
@@ -91,6 +93,8 @@ module StartUp =
         async {
             let nextRoundAnts = ref ants
             while List.length !nextRoundAnts > 1 do
+                logsb.AppendLine("-- New Round --") |> ignore
+
                 let trf, leftoverAnt = generatePairs (!nextRoundAnts)
                 let thisRoundPairs = ref trf
                 nextRoundAnts := leftoverAnt
@@ -128,7 +132,9 @@ module StartUp =
                 let merged = mergeEvents flatScs None 
                 merged 
                 |> Option.iter (fun ev -> 
-                    ev |> Event.add (fun args -> nextRoundAnts := args.Winner :: !nextRoundAnts; sims := !sims - 1))
+                    ev |> Event.add (fun args -> nextRoundAnts := args.Winner :: !nextRoundAnts
+                                                 logsb.AppendLine (sprintf "%s vs. %s -> %s" args.RedAI.Name args.BlackAI.Name args.Winner.Name) |> ignore
+                                                 sims := !sims - 1))
 
                 // Start initial simulations
                 for sc in flatScs do
@@ -151,7 +157,10 @@ module StartUp =
                     do! Async.Sleep(50)           
 
             let winner = List.head !nextRoundAnts
-            do MessageBox.Show("The winner of the contest is: " + winner.Name, "Contest Winner!", MessageBoxButton.OK, MessageBoxImage.Information) |> ignore
+            let wintext = "The winner of the contest is: " + winner.Name
+            do logsb.AppendLine(wintext) |> ignore
+            do File.WriteAllText(logfile, logsb.ToString())
+            do MessageBox.Show(wintext, "Contest Winner!", MessageBoxButton.OK, MessageBoxImage.Information) |> ignore
 
         } |> Async.StartImmediate
         
