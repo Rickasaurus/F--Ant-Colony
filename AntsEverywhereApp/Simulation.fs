@@ -42,7 +42,7 @@ and SimulationControl () as this =
 
     let simulationEndedEvent = Event<SimulationResult>();
 
-    let width, height = 450.0, 450.0
+    let width, height = 350.0, 350.0
     
     let wm, hm = width / float (xSize + 1), height / float (ySize + 1)
     let offset x y = x * wm, y * hm  
@@ -110,7 +110,7 @@ and SimulationControl () as this =
         |> ignore
 
     let drawScore bName bFood rName rFood remaing = 
-        do updateScore (sprintf "Black (%s): %d vs Red (%s): %d - Remaining Cycles %d" bName bFood rName rFood remaing)
+        do updateScore (sprintf "Black (%s): %d vs Red (%s): %d\nRemaining Cycles %d" bName bFood rName rFood remaing)
 
     let drawUpdates (world: TheWorld) =
         canvas.Children.Clear()

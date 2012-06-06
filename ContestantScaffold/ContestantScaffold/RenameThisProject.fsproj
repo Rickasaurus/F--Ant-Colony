@@ -11,26 +11,28 @@
     <AssemblyName>RenameThisProject</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <Name>RenameThisProject</Name>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\ContestantScaffold.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\RenameThisProject.xml</DocumentationFile>
     <StartAction>Program</StartAction>
     <StartProgram>.\tools\AntsEverywhereApp.exe</StartProgram>
-    <StartWorkingDirectory>.\tools\</StartWorkingDirectory>
-    <StartArguments>RenameThisProject,".\ContestantScaffold\bin\Debug\RenameThisProject.dll"</StartArguments>
+    <StartWorkingDirectory>
+    </StartWorkingDirectory>
+    <StartArguments>RenameThisProject,RenameThisProject.dll</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Release\ContestantScaffold.XML</DocumentationFile>
@@ -40,20 +42,22 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Debug\ContestantScaffold.XML</DocumentationFile>
-    <StartAction>Program</StartAction>
-    <StartProgram>C:\Developer\F--Ant-Colony\ContestantScaffold\tools\AntsEverywhereApp.exe</StartProgram>
-    <StartWorkingDirectory>C:\Developer\F--Ant-Colony\ContestantScaffold\tools\</StartWorkingDirectory>
+    <StartAction>Project</StartAction>
+    <StartProgram>
+    </StartProgram>
+    <StartWorkingDirectory>
+    </StartWorkingDirectory>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <Tailcalls>true</Tailcalls>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Release\ContestantScaffold.XML</DocumentationFile>
@@ -75,6 +79,10 @@
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">
