@@ -25,6 +25,7 @@ open System.IO
 open AntsEverywhereLib.Types
 open AntsEverywhereLib.UserTypes
 
+
 [<AutoOpen>]
 module FsExtensions =
     type IDictionary<'Key,'Value> with
@@ -39,6 +40,76 @@ module FsExtensions =
 type AIType =
         | AIAssemblyRefernece of String
         | AIResolved of IAntBehavior
+
+
+
+module LoadingHelpers =
+    let loadAIFromStream (stream : System.IO.Stream) =
+//        try
+#if SILVERLIGHT
+            let asmPart = AssemblyPart()
+            let asm = asmPart.Load stream
+#else
+            // here's to hoping the the file isn't bigger that Int32.MAX
+            let buffer: byte[] = Array.zeroCreate (int stream.Length)
+            stream.Read(buffer, 0, (int stream.Length)) |> ignore
+            let asm = Assembly.Load buffer
+#endif
+            let ai = asm.GetTypes()
+                     |> Seq.filter (fun t -> t.IsClass && not t.IsInterface && not t.IsAbstract && not t.IsGenericTypeDefinition)
+                     |> Seq.filter (fun t -> typeof<IAntBehavior>.IsAssignableFrom(t))
+                     |> Seq.map (fun t -> Activator.CreateInstance(t) :?> IAntBehavior)
+                     |> List.ofSeq
+                     |> List.nth <| 0
+            Some ai
+//        with e -> headerText.Text <- sprintf "%O" e.Message
+//                  None
+       
+    let loadAIFromWeb url : Option<IAntBehavior>= 
+//        try
+            let client = new WebClient()
+            let asyncDownload : Async<Option<IAntBehavior>> =                      
+                    async {
+                        let asyncArgs = Async.AwaitEvent( client.OpenReadCompleted )
+                        client.OpenReadAsync url
+                        let! args = asyncArgs
+                        use resultStream = args.Result
+                        return loadAIFromStream resultStream
+                    }
+            asyncDownload |> Async.RunSynchronously
+//        with e -> headerText.Text <- sprintf "%O" e.Message
+//                  None
+
+    let loadAIFromDisk () = 
+//        try
+#if SILVERLIGHT
+            let ofd = new OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = false)
+#else
+            let ofd = new Microsoft.Win32.OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = true)
+#endif
+
+            let clicked = ofd.ShowDialog()
+            if clicked.HasValue && clicked.Value then 
+#if SILVERLIGHT
+                use stream = ofd.File.OpenRead()
+                [
+                    for file in ofd.Files do
+                        use stream = file.OpenRead()
+                        yield! loadAIFromStream stream |> Option.toList
+                ]
+#else
+                [ 
+                    for filename in ofd.FileNames do
+                        use stream = System.IO.File.OpenRead(filename)
+                        yield! loadAIFromStream stream |> Option.toList 
+                ]
+#endif
+            else []  
+//        with 
+//        | e -> headerText.Text <- sprintf "%O" e.Message
+//               []
+               
+open LoadingHelpers                   
 
 type AISelectionControl (defaultAI : IAntBehavior) as this =
     inherit UserControl ()
@@ -140,66 +211,6 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
         else
             do MessageBox.Show("Warning. AI Discarded due to same name: " + ai.Name) |> ignore
 
-    let loadAIFromStream (stream : System.IO.Stream) =
-        try
-#if SILVERLIGHT
-            let asmPart = AssemblyPart()
-            let asm = asmPart.Load stream
-#else
-            // here's to hoping the the file isn't bigger that Int32.MAX
-            let buffer: byte[] = Array.zeroCreate (int stream.Length)
-            stream.Read(buffer, 0, (int stream.Length)) |> ignore
-            let asm = Assembly.Load buffer
-#endif
-            let ai = asm.GetTypes()
-                     |> Seq.filter (fun t -> t.IsClass && not t.IsInterface && not t.IsAbstract && not t.IsGenericTypeDefinition)
-                     |> Seq.filter (fun t -> typeof<IAntBehavior>.IsAssignableFrom(t))
-                     |> Seq.map (fun t -> Activator.CreateInstance(t) :?> IAntBehavior)
-                     |> List.ofSeq
-                     |> List.nth <| 0
-            Some ai
-        with e -> headerText.Text <- sprintf "%O" e.Message
-                  None
-       
-    let loadAIFromWeb url : Option<IAntBehavior>= 
-        try
-            let client = new WebClient()
-            let asyncDownload : Async<Option<IAntBehavior>> =                      
-                    async {
-                        let asyncArgs = Async.AwaitEvent( client.OpenReadCompleted )
-                        client.OpenReadAsync url
-                        let! args = asyncArgs
-                        use resultStream = args.Result
-                        return loadAIFromStream resultStream
-                    }
-            asyncDownload |> Async.RunSynchronously
-        with e -> headerText.Text <- sprintf "%O" e.Message
-                  None
-
-    let loadAIFromDisk () = 
-        try
-#if SILVERLIGHT
-            let ofd = new OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = false)
-#else
-            let ofd = new Microsoft.Win32.OpenFileDialog(Filter = "Assemblies (*.dll;*.exe)|*.dll;*.exe|All Files(*.*)|*.*", FilterIndex = 1, Multiselect = true)
-#endif
-
-            let clicked = ofd.ShowDialog()
-            if clicked.HasValue && clicked.Value then 
-#if SILVERLIGHT
-                use stream = ofd.File.OpenRead()
-                [ loadAIFromStream stream ]
-#else
-                [ 
-                    for filename in ofd.FileNames do
-                        use stream = System.IO.File.OpenRead(filename)
-                        yield! loadAIFromStream stream |> Option.toList 
-                ]
-#endif
-            else []  
-        with 
-        | e -> headerText.Text <- sprintf "%O" e.Message
-               []
 
     let resolveAI ai = 
         match ai with
@@ -256,6 +267,9 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
     
     do refresh()
        this.Content <- globalStackPanel
+      
+    member x.addLoadedAIs (ais: IAntBehavior seq) =
+       ais |> Seq.iter (fun ai -> addResolvedAIToMap ai; refresh())
        
     //
     // This is mainly used to add items from the Silverlight InitParams
@@ -267,17 +281,6 @@ type AISelectionControl (defaultAI : IAntBehavior) as this =
             for (k,v) in newAiSeq do
                 aiMap.Add(k, v)
             refresh()
-
-#if SILVERLIGHT
-     //HACK: the following function only works on WPF
-#else   
-    //HACK: put this in so the start-up AI doesn't have to be hard-coded [PB]
-    member x.addItemsFromDisk args =
-        let loaded = args |> Seq.choose (fun fileName -> use stream = File.OpenRead(fileName) in loadAIFromStream stream)
-        loaded |> Seq.iter (fun ai -> addResolvedAIToMap ai; refresh())
-        loaded
-
-#endif
 
     //HACK: put this in so the start-up AI doesn't have to be hard-coded [PB] 
     member x.AIMap = aiMap

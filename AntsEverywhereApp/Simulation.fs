@@ -18,7 +18,7 @@ open System.Windows.Input
 open System.Windows.Media
 open System.Windows.Shapes
 open System.Windows.Threading
-open System.Threading.Tasks
+//open System.Threading.Tasks
 
 open AntsEverywhereLib.Types
 open AntsEverywhereLib.UserTypes
@@ -174,7 +174,8 @@ and SimulationControl () as this =
 
         {new IDisposable with member this.Dispose() = gameTimer.Stop()} |> remember
 
-    do this.IsVisibleChanged.Subscribe (fun (args: DependencyPropertyChangedEventArgs) -> if (args.NewValue :?> bool) then gameTimer.Start() else gameTimer.Stop() ) |> ignore
+    //do this.IsVisibleChanged.Subscribe (fun (args: DependencyPropertyChangedEventArgs) -> if (args.NewValue :?> bool) then gameTimer.Start() else gameTimer.Stop() ) |> ignore
+
     let clickedEvent = new Event<_>()
 
     do  layout.Children.SafeAdd canvas

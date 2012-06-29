@@ -60,9 +60,10 @@
   <ItemGroup>
     <Compile Include="Misc.fs" />
     <Compile Include="TestAntBehavior.fs" />
+    <Compile Include="MainScreen.fs" />
     <Compile Include="Simulation.fs" />
     <Compile Include="AISelection.fs" />
-    <Compile Include="GameController.fs" />
+    <Compile Include="GameControl.fs" />
     <Compile Include="App.fs" />
     <Content Include="AppManifest.xml" />
   </ItemGroup>
