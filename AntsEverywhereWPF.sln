@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Frank Levine.WPF", "Frank Levine\Frank Levine.WPF.fsproj", "{EF8550DA-5C05-4A72-974B-76614A607BCD}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Rick's Hardish.WPF", "TestAI1\Rick's Hardish.WPF.fsproj", "{668FF91E-D38B-4363-84C2-0EEAC7271F82}"
