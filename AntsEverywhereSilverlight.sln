@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+# Visual Studio 2012
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AntsEverywhereApp", "AntsEverywhereApp\AntsEverywhereApp.fsproj", "{86516C98-4DAD-43D4-9FE1-78B041AE92FD}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AntsEverywhereLib", "AntsEverywhereLib\AntsEverywhereLib.fsproj", "{1FEB7E85-8F91-494C-9ED5-87C8BC32CB93}"

@@ -6,6 +6,13 @@ Note that this was all hacked out with getting the most done in the least amount
 The basic Silverlight used here is based on Phillip Trelford's Missile Command Example
 http://www.trelford.com/blog/post/MissileCommand.aspx
 
+To open in Visual Studio 2010, Microsoft Silverlight 5 Tools for Visual Studio 2010 SP1 are required.
+http://www.microsoft.com/en-us/download/confirmation.aspx?id=28358
+
+To compile the latest F# tools are required as they include F# Core for Silverlight 5.
+http://www.microsoft.com/en-us/download/details.aspx?id=11100
+
 Major Updates:
 ??-??-????: Robert Pickering has added WPF support!
 05-17-2012: Now with ant-on-ant murdering action! (via Rick)
+08-15-2012: Now Silverlight 5
